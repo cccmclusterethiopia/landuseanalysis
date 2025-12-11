@@ -10,9 +10,13 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Turf.js for spatial operations -->
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -59,8 +63,9 @@
                                 <label><i class="fas fa-layer-group"></i> Map Layer:</label>
                                 <div class="layer-buttons">
                                     <button class="layer-btn active" data-layer="osm">OpenStreetMap</button>
-                                    <button class="layer-btn" data-layer="satellite">Satellite</button>
-                                    <button class="layer-btn" data-layer="topo">Topographic</button>
+                                    <button class="layer-btn" data-layer="sentinel">Sentinel-2</button>
+                                    <button class="layer-btn" data-layer="landsat">Landsat-8</button>
+                                    <button class="layer-btn" data-layer="sites">Sites Boundary</button>
                                 </div>
                             </div>
                             <div class="year-selector">
@@ -73,6 +78,17 @@
                                     <option value="2020">2020</option>
                                 </select>
                             </div>
+                            <div class="map-tools">
+                                <button id="drawTool" class="map-tool-btn" title="Draw analysis area">
+                                    <i class="fas fa-draw-polygon"></i> Draw Area
+                                </button>
+                                <button id="clearDraw" class="map-tool-btn" title="Clear drawn areas">
+                                    <i class="fas fa-trash"></i> Clear
+                                </button>
+                                <button id="fetchSentinelData" class="map-tool-btn" title="Get Sentinel data for selected area">
+                                    <i class="fas fa-satellite"></i> Get Sentinel Data
+                                </button>
+                            </div>
                             <div class="map-info">
                                 <div class="info-item">
                                     <i class="fas fa-crosshairs"></i>
@@ -81,6 +97,10 @@
                                 <div class="info-item">
                                     <i class="fas fa-satellite"></i>
                                     <span id="currentLayer">OpenStreetMap</span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span id="sentinelInfo">Click Get Sentinel Data for analysis</span>
                                 </div>
                             </div>
                         </div>
@@ -93,6 +113,14 @@
                         <label><i class="fas fa-layer-group"></i> Land Use Categories:</label>
                         <div class="categories-grid" id="categoriesGrid">
                             <!-- Categories will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Sentinel Data Results Panel -->
+                    <div class="sentinel-results" id="sentinelResults" style="display: none;">
+                        <h4><i class="fas fa-chart-pie"></i> Sentinel Analysis Results</h4>
+                        <div class="results-content" id="sentinelResultsContent">
+                            <!-- Results will be displayed here -->
                         </div>
                     </div>
                 </div>
@@ -154,13 +182,19 @@
     </div>
 
     <footer>
-        <p>Data Source: Land Use Analysis 2020-2024 | Map Data: © OpenStreetMap, Sentinel-2 | <i class="fas fa-leaf"></i> Sustainable Development</p>
+        <p>Data Source: Land Use Analysis 2020-2024 | Map Data: © OpenStreetMap, Sentinel-2, Landsat-8 | <i class="fas fa-leaf"></i> Sustainable Development</p>
     </footer>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
+    <!-- Leaflet Draw -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <!-- Shapefile.js for reading SHP files -->
+    <script src="https://cdn.jsdelivr.net/npm/shapefile@0.6.6/dist/shapefile.js"></script>
+    <!-- Proj4 for coordinate transformations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
