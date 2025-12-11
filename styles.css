@@ -519,3 +519,190 @@ footer i {
     padding: 10px 15px !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
 }
+
+/* Add these styles to your existing CSS file */
+
+/* File Upload Section */
+.upload-section {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 1.8rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+.upload-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+}
+
+.upload-header i {
+    font-size: 1.5rem;
+}
+
+.upload-header h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.upload-instructions {
+    margin-bottom: 1.5rem;
+    color: #4a5568;
+}
+
+.upload-instructions p {
+    margin-bottom: 0.5rem;
+}
+
+.file-upload-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.file-upload-item {
+    background: #f8f9fa;
+    padding: 1.2rem;
+    border-radius: 10px;
+    border: 2px dashed #e1e5eb;
+    transition: all 0.3s ease;
+}
+
+.file-upload-item:hover {
+    border-color: var(--secondary-color);
+    background: #f0f7ff;
+}
+
+.file-upload-item label {
+    display: block;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.file-upload-item input[type="file"] {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+}
+
+.file-upload-item input[type="file"]:hover {
+    border-color: var(--secondary-color);
+}
+
+.file-status {
+    margin-top: 0.8rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.file-status:not(.uploaded) {
+    background: #fee;
+    color: #c33;
+}
+
+.file-status.uploaded {
+    background: #efe;
+    color: #393;
+}
+
+.load-data-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--secondary-color), #219653);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.load-data-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.load-data-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* Data Status */
+.data-status {
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.status-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    color: #4a5568;
+}
+
+.status-message i {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    opacity: 0.7;
+}
+
+.status-message h4 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+}
+
+/* Update existing styles */
+.site-select:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Progress indicator */
+.progress-container {
+    margin-top: 1rem;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 6px;
+    background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Add loading animation */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.loading {
+    animation: pulse 1.5s infinite;
+}
