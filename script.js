@@ -27,22 +27,46 @@ class LandUseVisualizer {
             bareGround: '#95a5a6',
             rangeland: '#8e44ad'
         };
+        
+        // Map variables
+        this.map = null;
+        this.siteMarkers = {};
+        this.selectedMarker = null;
+        this.geoTiffLayers = {
+            '2020': null,
+            '2022': null,
+            '2024': null
+        };
+        this.currentLayer = '2024';
+        this.satelliteLayer = null;
+        
+        // Site coordinates (you'll need to add your actual coordinates here)
+        this.siteCoordinates = {
+            // Example coordinates - YOU NEED TO REPLACE THESE WITH YOUR ACTUAL COORDINATES
+            "Abiyiadi TVET College": { lat: 13.5, lng: 39.5 },
+            "Abreha We'atsbha Elementary School": { lat: 13.6, lng: 39.6 },
+            "Adi Daero Cambo": { lat: 13.7, lng: 39.7 }
+            // Add all your 70 sites here with their actual coordinates
+        };
+        
         this.chart = null;
         
         this.init();
     }
     
-    init() {
+    async init() {
         this.showLoadingState();
         this.setupEventListeners();
         this.populateCategoryCards();
-        this.loadData();
+        await this.initializeMap();
+        await this.loadData();
     }
     
     showLoadingState() {
         document.getElementById('loadingChart').style.display = 'flex';
         document.getElementById('mainChart').style.display = 'none';
         document.getElementById('dataStatusText').textContent = 'Loading data...';
+        document.getElementById('selectedSiteInfo').textContent = 'No site selected';
     }
     
     hideLoadingState() {
@@ -51,21 +75,119 @@ class LandUseVisualizer {
     }
     
     setupEventListeners() {
+        // Site selection from top bar
         document.getElementById('siteSelect').addEventListener('change', (e) => {
-            this.currentSite = e.target.value;
+            const siteName = e.target.value;
+            this.currentSite = siteName;
             if (this.currentSite) {
                 this.updateVisualization();
                 this.updateCategoryPercentages();
-                this.updateSiteAnalysis();
+                this.zoomToSite(this.currentSite);
                 document.getElementById('dataStatusText').textContent = `Viewing: ${this.currentSite}`;
+                document.getElementById('selectedSiteInfo').textContent = this.currentSite;
             } else {
                 document.getElementById('dataStatusText').textContent = 'Select a site';
+                document.getElementById('selectedSiteInfo').textContent = 'No site selected';
+                this.resetMapView();
             }
         });
         
         document.getElementById('retryBtn').addEventListener('click', () => {
             this.loadData();
         });
+        
+        // Map layer buttons
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const year = e.target.dataset.year;
+                this.switchMapLayer(year);
+                
+                // Update active state
+                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update layer info
+                const layerName = year === 'satellite' ? 'Satellite View' : `${year} Land Use`;
+                document.getElementById('currentLayer').textContent = layerName;
+            });
+        });
+    }
+    
+    async initializeMap() {
+        try {
+            // Initialize map with a default center (you may want to adjust this)
+            const defaultCenter = [13.5, 39.5]; // Approximate center of Ethiopia
+            this.map = L.map('map').setView(defaultCenter, 8);
+            
+            // Add base layers
+            this.satelliteLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(this.map);
+            
+            // Load GeoTIFF layers
+            await this.loadGeoTIFFLayers();
+            
+            // Set default layer
+            this.switchMapLayer('2024');
+            
+            console.log('Map initialized successfully');
+            
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            document.getElementById('map').innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #666;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Unable to load map. Please check your internet connection.</p>
+                </div>
+            `;
+        }
+    }
+    
+    async loadGeoTIFFLayers() {
+        const years = ['2020', '2022', '2024'];
+        
+        for (const year of years) {
+            try {
+                const url = `data/c${year}_02.tif`;
+                console.log(`Loading GeoTIFF for ${year}: ${url}`);
+                
+                // Create GeoTIFF layer
+                const layer = await createGeoTIFFLayer(url);
+                this.geoTiffLayers[year] = layer;
+                
+                console.log(`GeoTIFF layer for ${year} loaded successfully`);
+                
+            } catch (error) {
+                console.error(`Error loading GeoTIFF for ${year}:`, error);
+                // Create a placeholder layer if GeoTIFF fails to load
+                this.geoTiffLayers[year] = L.layerGroup();
+            }
+        }
+    }
+    
+    switchMapLayer(year) {
+        // Remove all layers
+        if (this.geoTiffLayers['2020']) this.map.removeLayer(this.geoTiffLayers['2020']);
+        if (this.geoTiffLayers['2022']) this.map.removeLayer(this.geoTiffLayers['2022']);
+        if (this.geoTiffLayers['2024']) this.map.removeLayer(this.geoTiffLayers['2024']);
+        if (this.satelliteLayer) this.map.removeLayer(this.satelliteLayer);
+        
+        // Add selected layer
+        if (year === 'satellite') {
+            this.satelliteLayer.addTo(this.map);
+            this.currentLayer = 'satellite';
+        } else {
+            const layer = this.geoTiffLayers[year];
+            if (layer) {
+                layer.addTo(this.map);
+                this.currentLayer = year;
+            } else {
+                // Fallback to satellite if GeoTIFF not available
+                this.satelliteLayer.addTo(this.map);
+                this.currentLayer = 'satellite';
+            }
+        }
     }
     
     async loadData() {
@@ -106,6 +228,7 @@ class LandUseVisualizer {
             
             if (allLoaded) {
                 this.populateSiteSelect();
+                this.addSiteMarkersToMap();
                 document.getElementById('loadingMessage').textContent = 'Data loaded successfully!';
                 
                 const uniqueSites = this.getAllSites();
@@ -120,8 +243,9 @@ class LandUseVisualizer {
                     this.currentSite = firstSite;
                     this.updateVisualization();
                     this.updateCategoryPercentages();
-                    this.updateSiteAnalysis();
+                    this.zoomToSite(this.currentSite);
                     document.getElementById('dataStatusText').textContent = `Viewing: ${this.currentSite}`;
+                    document.getElementById('selectedSiteInfo').textContent = this.currentSite;
                 }
             } else {
                 document.getElementById('loadingMessage').textContent = 'Failed to load some data files.';
@@ -136,6 +260,142 @@ class LandUseVisualizer {
         }
     }
     
+    addSiteMarkersToMap() {
+        // Clear existing markers
+        Object.values(this.siteMarkers).forEach(marker => {
+            if (marker) this.map.removeLayer(marker);
+        });
+        this.siteMarkers = {};
+        
+        // Add markers for each site
+        const sites = this.getAllSites();
+        
+        sites.forEach(siteName => {
+            const coordinates = this.getSiteCoordinates(siteName);
+            if (coordinates) {
+                const marker = this.createSiteMarker(siteName, coordinates);
+                this.siteMarkers[siteName] = marker;
+                marker.addTo(this.map);
+            }
+        });
+    }
+    
+    createSiteMarker(siteName, coordinates) {
+        // Create custom HTML marker
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `<i class="fas fa-map-marker-alt"></i>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+        });
+        
+        const marker = L.marker(coordinates, { icon: icon });
+        
+        // Add click event
+        marker.on('click', () => {
+            this.selectSite(siteName);
+        });
+        
+        // Add tooltip
+        marker.bindTooltip(siteName, {
+            direction: 'top',
+            offset: [0, -20],
+            opacity: 0.9
+        });
+        
+        return marker;
+    }
+    
+    getSiteCoordinates(siteName) {
+        // Return coordinates if available, otherwise use a default
+        if (this.siteCoordinates[siteName]) {
+            return this.siteCoordinates[siteName];
+        }
+        
+        // Generate random coordinates within Ethiopia bounds as fallback
+        // YOU SHOULD REPLACE THIS WITH YOUR ACTUAL COORDINATES
+        const ethiopiaBounds = {
+            minLat: 3.4, maxLat: 14.9,
+            minLng: 32.9, maxLng: 47.9
+        };
+        
+        return {
+            lat: ethiopiaBounds.minLat + Math.random() * (ethiopiaBounds.maxLat - ethiopiaBounds.minLat),
+            lng: ethiopiaBounds.minLng + Math.random() * (ethiopiaBounds.maxLng - ethiopiaBounds.minLng)
+        };
+    }
+    
+    selectSite(siteName) {
+        // Update dropdown
+        document.getElementById('siteSelect').value = siteName;
+        this.currentSite = siteName;
+        
+        // Update visualization
+        this.updateVisualization();
+        this.updateCategoryPercentages();
+        this.zoomToSite(siteName);
+        
+        // Update UI text
+        document.getElementById('dataStatusText').textContent = `Viewing: ${siteName}`;
+        document.getElementById('selectedSiteInfo').textContent = siteName;
+    }
+    
+    zoomToSite(siteName) {
+        const coordinates = this.getSiteCoordinates(siteName);
+        if (coordinates && this.map) {
+            // Update marker style
+            if (this.selectedMarker) {
+                this.selectedMarker._icon.classList.remove('selected');
+            }
+            
+            const marker = this.siteMarkers[siteName];
+            if (marker && marker._icon) {
+                marker._icon.classList.add('selected');
+                this.selectedMarker = marker;
+            }
+            
+            // Zoom to the site
+            this.map.setView([coordinates.lat, coordinates.lng], 12);
+            
+            // Open tooltip
+            if (marker) {
+                marker.openTooltip();
+            }
+        }
+    }
+    
+    resetMapView() {
+        // Reset to default view
+        if (this.map) {
+            this.map.setView([13.5, 39.5], 8);
+        }
+        
+        // Reset marker style
+        if (this.selectedMarker) {
+            this.selectedMarker._icon.classList.remove('selected');
+            this.selectedMarker = null;
+        }
+    }
+    
+    // Helper function to create GeoTIFF layer
+    async function createGeoTIFFLayer(url) {
+        try {
+            const response = await fetch(url);
+            const arrayBuffer = await response.arrayBuffer();
+            const georaster = await parseGeoraster(arrayBuffer);
+            
+            return new GeoRasterLayer({
+                georaster,
+                opacity: 0.7,
+                resolution: 256
+            });
+        } catch (error) {
+            console.error('Error creating GeoTIFF layer:', error);
+            return L.layerGroup(); // Return empty layer group as fallback
+        }
+    }
+    
+    // Rest of your existing methods remain the same...
     cleanData(data, year) {
         if (!Array.isArray(data)) return [];
         
@@ -625,73 +885,6 @@ class LandUseVisualizer {
         if (changeStr.startsWith('+')) return 'positive';
         if (changeStr.startsWith('-')) return 'negative';
         return 'neutral';
-    }
-    
-    updateSiteAnalysis() {
-        if (!this.currentSite) {
-            const narrativeContent = document.getElementById('narrativeContent');
-            narrativeContent.innerHTML = `
-                <div class="narrative-placeholder">
-                    <div class="placeholder-icon">
-                        <i class="fas fa-pencil-alt"></i>
-                    </div>
-                    <h4>Site Analysis Ready</h4>
-                    <p class="placeholder-text">
-                        Select a site from the dropdown above to view detailed land use analysis. 
-                        The system will automatically generate insights about changes in Built Area, 
-                        Trees, Crops, and other land use categories from 2020 to 2024.
-                    </p>
-                    <div class="placeholder-features">
-                        <div class="feature-item">
-                            <i class="fas fa-chart-line"></i>
-                            <span>Trend Analysis</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-percentage"></i>
-                            <span>Percentage Changes</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-map-marked-alt"></i>
-                            <span>Land Use Patterns</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-        
-        const siteData2024 = this.getSiteData(this.currentSite, '2024');
-        if (!siteData2024) return;
-        
-        const analysisContent = `
-            <div class="narrative-placeholder">
-                <div class="placeholder-icon">
-                    <i class="fas fa-map-marker-alt"></i>
-                </div>
-                <h4>${this.currentSite} - 2024 Overview</h4>
-                <p class="placeholder-text">
-                    Land use distribution for ${this.currentSite} in 2024 shows the following percentages 
-                    across different categories. Select or deselect categories on the right to customize 
-                    the visualization.
-                </p>
-                <div class="placeholder-features">
-                    <div class="feature-item">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>Land Use Distribution</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-history"></i>
-                        <span>Historical Trends</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Change Analysis</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('narrativeContent').innerHTML = analysisContent;
     }
 }
 
