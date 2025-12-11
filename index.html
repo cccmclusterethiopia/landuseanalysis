@@ -13,121 +13,91 @@
     <div class="container">
         <header>
             <div class="header-content">
-                <i class="fas fa-globe-americas header-icon"></i>
+                <i class="fas fa-seedling header-icon"></i>
                 <h1>Land Use Variation Analyzer</h1>
-                <p class="subtitle">Track land use changes across sites from 2020 to 2024</p>
+                <p class="subtitle">Monitoring Environmental Changes Across Sites (2020-2024)</p>
             </div>
         </header>
 
         <div class="main-content">
-            <div class="control-panel">
-                <div class="form-group">
-                    <label for="siteSelect"><i class="fas fa-map-marker-alt"></i> Select Site:</label>
-                    <select id="siteSelect" class="site-select">
-                        <option value="">-- Choose a site --</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label><i class="fas fa-filter"></i> Land Use Categories:</label>
-                    <div class="category-checkboxes" id="categoryCheckboxes">
-                        <!-- Categories will be populated by JavaScript -->
+            <div class="left-panel">
+                <!-- Narrative Section -->
+                <div class="narrative-section">
+                    <div class="narrative-header">
+                        <i class="fas fa-info-circle"></i>
+                        <h3>About This Visualization</h3>
+                    </div>
+                    <div class="narrative-content" id="narrativeContent">
+                        <!-- Narrative will be populated by JavaScript -->
+                        <p class="narrative-text">
+                            Welcome to the Land Use Variation Analyzer. This tool helps visualize changes in land use categories across different sites from 2020 to 2024.
+                        </p>
+                        <div class="narrative-stats" id="narrativeStats">
+                            <!-- Dynamic stats will appear here -->
+                        </div>
+                        <div class="narrative-insights">
+                            <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
+                            <ul class="insights-list">
+                                <li>Track changes in land cover percentages over time</li>
+                                <li>Monitor urbanization and agricultural expansion</li>
+                                <li>Understand environmental transformation patterns</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="chartType"><i class="fas fa-chart-bar"></i> Chart Type:</label>
-                    <select id="chartType" class="chart-type">
-                        <option value="bar">Bar Chart</option>
-                        <option value="line">Line Chart</option>
-                        <option value="radar">Radar Chart</option>
-                        <option value="area">Area Chart</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label><i class="fas fa-palette"></i> Color Theme:</label>
-                    <div class="theme-buttons">
-                        <button class="theme-btn active" data-theme="default">Default</button>
-                        <button class="theme-btn" data-theme="nature">Nature</button>
-                        <button class="theme-btn" data-theme="vibrant">Vibrant</button>
+
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <div class="form-group">
+                        <label for="siteSelect"><i class="fas fa-map-marker-alt"></i> Select Site:</label>
+                        <select id="siteSelect" class="site-select">
+                            <option value="">-- Choose a site --</option>
+                        </select>
                     </div>
-                </div>
-                
-                <button id="compareSitesBtn" class="compare-btn">
-                    <i class="fas fa-balance-scale"></i> Compare Multiple Sites
-                </button>
-                
-                <div class="stats-summary" id="statsSummary">
-                    <h3><i class="fas fa-info-circle"></i> Quick Stats</h3>
-                    <div class="stats-grid">
-                        <!-- Stats will be populated by JavaScript -->
+                    
+                    <!-- Beautiful Category Selection -->
+                    <div class="form-group">
+                        <label><i class="fas fa-layer-group"></i> Land Use Categories:</label>
+                        <div class="categories-grid" id="categoriesGrid">
+                            <!-- Categories will be populated by JavaScript -->
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="visualization-area">
+                <div class="chart-header">
+                    <h2><i class="fas fa-chart-bar"></i> Land Use Distribution</h2>
+                    <div class="chart-info">
+                        <span class="info-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>2020-2024 Timeline</span>
+                        </span>
+                        <span class="info-item">
+                            <i class="fas fa-expand-alt"></i>
+                            <span>Cumulative Percentage View</span>
+                        </span>
+                    </div>
+                </div>
+                
                 <div class="chart-container">
                     <canvas id="mainChart"></canvas>
                 </div>
                 
-                <div class="data-table-container">
-                    <h3><i class="fas fa-table"></i> Detailed Data</h3>
-                    <div class="table-responsive">
-                        <table id="dataTable">
-                            <thead>
-                                <tr>
-                                    <th>Year</th>
-                                    <th>Category</th>
-                                    <th>Area (sq km)</th>
-                                    <th>Percentage</th>
-                                    <th>Change</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Data will be populated by JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <!-- Data Table Removed as requested -->
                 
                 <div class="timeline-container">
-                    <h3><i class="fas fa-history"></i> Change Timeline</h3>
+                    <h3><i class="fas fa-chart-line"></i> Change Progression</h3>
                     <div class="timeline" id="timeline">
                         <!-- Timeline will be populated by JavaScript -->
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="comparison-modal" id="comparisonModal">
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h2><i class="fas fa-balance-scale"></i> Compare Sites</h2>
-                <div class="comparison-controls">
-                    <div class="comparison-selectors">
-                        <div class="comparison-selector">
-                            <label>Site 1:</label>
-                            <select id="compareSite1"></select>
-                        </div>
-                        <div class="comparison-selector">
-                            <label>Site 2:</label>
-                            <select id="compareSite2"></select>
-                        </div>
-                    </div>
-                    <button id="generateComparison" class="generate-btn">
-                        <i class="fas fa-chart-line"></i> Generate Comparison
-                    </button>
-                </div>
-                <div class="comparison-chart-container">
-                    <canvas id="comparisonChart"></canvas>
-                </div>
-            </div>
-        </div>
     </div>
 
     <footer>
-        <p>Data Source: Land Use Analysis 2020-2024 | Created with <i class="fas fa-heart"></i> for Environmental Monitoring</p>
+        <p>Data Source: Land Use Analysis 2020-2024 | Created for Environmental Monitoring | <i class="fas fa-leaf"></i> Sustainable Development</p>
     </footer>
 
     <script src="script.js"></script>
