@@ -42,9 +42,6 @@ class LandUseVisualizer {
     showLoadingState() {
         document.getElementById('loadingChart').style.display = 'flex';
         document.getElementById('mainChart').style.display = 'none';
-        this.updateStatus('2020', 'loading');
-        this.updateStatus('2022', 'loading');
-        this.updateStatus('2024', 'loading');
         document.getElementById('dataStatusText').textContent = 'Loading data...';
     }
     
@@ -53,26 +50,7 @@ class LandUseVisualizer {
         document.getElementById('mainChart').style.display = 'block';
     }
     
-    updateStatus(year, status, message = '') {
-        const element = document.getElementById(`status${year}`);
-        if (element) {
-            element.textContent = message || this.getStatusText(status);
-            element.className = `status-value ${status}`;
-        }
-    }
-    
-    getStatusText(status) {
-        const statusMap = {
-            'loading': 'Loading...',
-            'loaded': '✓ Loaded',
-            'error': '✗ Error',
-            'not-found': 'Not found'
-        };
-        return statusMap[status] || status;
-    }
-    
     setupEventListeners() {
-        // Site selection from top bar
         document.getElementById('siteSelect').addEventListener('change', (e) => {
             this.currentSite = e.target.value;
             if (this.currentSite) {
@@ -93,7 +71,6 @@ class LandUseVisualizer {
     async loadData() {
         console.log('Starting data load...');
         
-        // Reset states
         this.showLoadingState();
         document.getElementById('retryBtn').style.display = 'none';
         document.getElementById('loadingMessage').textContent = 'Loading data from repository...';
@@ -114,19 +91,15 @@ class LandUseVisualizer {
                         
                         if (Array.isArray(jsonData) && jsonData.length > 0) {
                             this.data[year] = this.cleanData(jsonData, year);
-                            this.updateStatus(year, 'loaded', `✓ Loaded (${jsonData.length} sites)`);
                         } else {
-                            this.updateStatus(year, 'error', '✗ Empty data');
                             allLoaded = false;
                         }
                     } else {
                         console.error(`Failed to load ${year} data: ${response.status}`);
-                        this.updateStatus(year, 'error', '✗ File not found');
                         allLoaded = false;
                     }
                 } catch (error) {
                     console.error(`Error loading ${year} data:`, error);
-                    this.updateStatus(year, 'error', `✗ ${error.message}`);
                     allLoaded = false;
                 }
             }
@@ -137,7 +110,6 @@ class LandUseVisualizer {
                 
                 const uniqueSites = this.getAllSites();
                 console.log('Unique sites found:', Array.from(uniqueSites));
-                document.getElementById('totalSites').textContent = uniqueSites.size;
                 document.getElementById('siteCount').textContent = `${uniqueSites.size} sites loaded`;
                 document.getElementById('dataStatusText').textContent = 'Select a site to begin';
                 
@@ -308,7 +280,6 @@ class LandUseVisualizer {
         
         if (this.currentSite) {
             this.updateVisualization();
-            this.updateSiteAnalysis();
         }
     }
     
@@ -584,7 +555,6 @@ class LandUseVisualizer {
             const div = document.createElement('div');
             div.className = 'timeline-item';
             
-            // Calculate changes for Built Area, Trees, and Crops
             let builtChange = '';
             let treesChange = '';
             let cropsChange = '';
@@ -592,19 +562,16 @@ class LandUseVisualizer {
             if (index > 0) {
                 const prevItem = timelineData[index - 1];
                 
-                // Built Area change
                 const prevBuilt = prevItem.data.BuiltArea_Percent || 0;
                 const currentBuilt = item.data.BuiltArea_Percent || 0;
                 const builtDiff = currentBuilt - prevBuilt;
                 builtChange = this.formatChange(builtDiff);
                 
-                // Trees change
                 const prevTrees = prevItem.data.Trees_Percent || 0;
                 const currentTrees = item.data.Trees_Percent || 0;
                 const treesDiff = currentTrees - prevTrees;
                 treesChange = this.formatChange(treesDiff);
                 
-                // Crops change
                 const prevCrops = prevItem.data.Crops_Percent || 0;
                 const currentCrops = item.data.Crops_Percent || 0;
                 const cropsDiff = currentCrops - prevCrops;
@@ -662,146 +629,69 @@ class LandUseVisualizer {
     
     updateSiteAnalysis() {
         if (!this.currentSite) {
-            document.getElementById('siteAnalysis').style.display = 'none';
             const narrativeContent = document.getElementById('narrativeContent');
             narrativeContent.innerHTML = `
-                <div class="data-status-panel">
-                    <div class="status-item">
-                        <span class="status-label">2020 Data:</span>
-                        <span class="status-value" id="status2020">Checking...</span>
+                <div class="narrative-placeholder">
+                    <div class="placeholder-icon">
+                        <i class="fas fa-pencil-alt"></i>
                     </div>
-                    <div class="status-item">
-                        <span class="status-label">2022 Data:</span>
-                        <span class="status-value" id="status2022">Checking...</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">2024 Data:</span>
-                        <span class="status-value" id="status2024">Checking...</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Total Sites:</span>
-                        <span class="status-value" id="totalSites">0</span>
+                    <h4>Site Analysis Ready</h4>
+                    <p class="placeholder-text">
+                        Select a site from the dropdown above to view detailed land use analysis. 
+                        The system will automatically generate insights about changes in Built Area, 
+                        Trees, Crops, and other land use categories from 2020 to 2024.
+                    </p>
+                    <div class="placeholder-features">
+                        <div class="feature-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Trend Analysis</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-percentage"></i>
+                            <span>Percentage Changes</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <span>Land Use Patterns</span>
+                        </div>
                     </div>
                 </div>
             `;
             return;
         }
         
-        const siteData2020 = this.getSiteData(this.currentSite, '2020');
         const siteData2024 = this.getSiteData(this.currentSite, '2024');
-        
-        if (!siteData2020 || !siteData2024) {
-            const analysisDiv = document.getElementById('siteAnalysis');
-            analysisDiv.innerHTML = `
-                <div class="narrative-text">
-                    <p>Incomplete data for <strong>${this.currentSite}</strong>.</p>
-                </div>
-            `;
-            analysisDiv.style.display = 'block';
-            return;
-        }
-        
-        const totalArea2020 = siteData2020.Total_Area_sq_km || 0;
-        const totalArea2024 = siteData2024.Total_Area_sq_km || 0;
-        const areaChange = ((totalArea2024 - totalArea2020) / totalArea2020 * 100).toFixed(1);
-        
-        // Calculate key changes
-        const builtChange = ((siteData2024.BuiltArea_Percent || 0) - (siteData2020.BuiltArea_Percent || 0)).toFixed(1);
-        const treesChange = ((siteData2024.Trees_Percent || 0) - (siteData2020.Trees_Percent || 0)).toFixed(1);
-        const cropsChange = ((siteData2024.Crops_Percent || 0) - (siteData2020.Crops_Percent || 0)).toFixed(1);
-        
-        const categories = {
-            'Water_Percent': 'Water',
-            'Trees_Percent': 'Trees',
-            'Crops_Percent': 'Crops',
-            'BuiltArea_Percent': 'Built Area',
-            'Rangeland_Percent': 'Rangeland'
-        };
-        
-        let max2020 = 0;
-        let dominant2020 = '';
-        let max2024 = 0;
-        let dominant2024 = '';
-        
-        Object.entries(categories).forEach(([key, label]) => {
-            const percent2020 = siteData2020[key] || 0;
-            const percent2024 = siteData2024[key] || 0;
-            
-            if (percent2020 > max2020) {
-                max2020 = percent2020;
-                dominant2020 = label;
-            }
-            
-            if (percent2024 > max2024) {
-                max2024 = percent2024;
-                dominant2024 = label;
-            }
-        });
-        
-        let totalSelectedPercent = 0;
-        const percentKeys = {
-            water: 'Water_Percent',
-            trees: 'Trees_Percent',
-            floodVegetation: 'FloodVegetation_Percent',
-            crops: 'Crops_Percent',
-            builtArea: 'BuiltArea_Percent',
-            bareGround: 'BareGround_Percent',
-            rangeland: 'Rangeland_Percent'
-        };
-        
-        Array.from(this.selectedCategories).forEach(categoryId => {
-            totalSelectedPercent += siteData2024[percentKeys[categoryId]] || 0;
-        });
+        if (!siteData2024) return;
         
         const analysisContent = `
-            <div class="narrative-text">
-                <p>Analysis of <strong>${this.currentSite}</strong> (2020-2024)</p>
-            </div>
-            
-            <div class="narrative-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Area (2024):</span>
-                    <span class="stat-value">${totalArea2024.toFixed(1)} sq km</span>
+            <div class="narrative-placeholder">
+                <div class="placeholder-icon">
+                    <i class="fas fa-map-marker-alt"></i>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-label">Area Change:</span>
-                    <span class="stat-value">${areaChange}%</span>
+                <h4>${this.currentSite} - 2024 Overview</h4>
+                <p class="placeholder-text">
+                    Land use distribution for ${this.currentSite} in 2024 shows the following percentages 
+                    across different categories. Select or deselect categories on the right to customize 
+                    the visualization.
+                </p>
+                <div class="placeholder-features">
+                    <div class="feature-item">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Land Use Distribution</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-history"></i>
+                        <span>Historical Trends</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Change Analysis</span>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-label">Built Area Δ:</span>
-                    <span class="stat-value ${builtChange >= 0 ? 'positive' : 'negative'}">
-                        ${builtChange >= 0 ? '+' : ''}${builtChange}%
-                    </span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Trees Δ:</span>
-                    <span class="stat-value ${treesChange >= 0 ? 'positive' : 'negative'}">
-                        ${treesChange >= 0 ? '+' : ''}${treesChange}%
-                    </span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Crops Δ:</span>
-                    <span class="stat-value ${cropsChange >= 0 ? 'positive' : 'negative'}">
-                        ${cropsChange >= 0 ? '+' : ''}${cropsChange}%
-                    </span>
-                </div>
-            </div>
-            
-            <div class="narrative-insights">
-                <h4><i class="fas fa-chart-line"></i> Trend Analysis</h4>
-                <ul class="insights-list">
-                    <li>Dominant land use changed from <strong>${dominant2020}</strong> to <strong>${dominant2024}</strong></li>
-                    <li>Built Area: ${builtChange >= 0 ? 'Increased' : 'Decreased'} by ${Math.abs(builtChange)}%</li>
-                    <li>Trees: ${treesChange >= 0 ? 'Increased' : 'Decreased'} by ${Math.abs(treesChange)}%</li>
-                    <li>Crops: ${cropsChange >= 0 ? 'Increased' : 'Decreased'} by ${Math.abs(cropsChange)}%</li>
-                    <li>Total area ${areaChange >= 0 ? 'expanded' : 'contracted'} by ${Math.abs(areaChange)}%</li>
-                </ul>
             </div>
         `;
         
-        const analysisDiv = document.getElementById('siteAnalysis');
-        analysisDiv.innerHTML = analysisContent;
-        analysisDiv.style.display = 'block';
+        document.getElementById('narrativeContent').innerHTML = analysisContent;
     }
 }
 
