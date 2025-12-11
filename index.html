@@ -28,12 +28,11 @@
                         <h3>About This Visualization</h3>
                     </div>
                     <div class="narrative-content" id="narrativeContent">
-                        <!-- Narrative will be populated by JavaScript -->
                         <p class="narrative-text">
-                            Welcome to the Land Use Variation Analyzer. This tool helps visualize changes in land use categories across different sites from 2020 to 2024.
+                            Welcome to the Land Use Variation Analyzer. Select a site from the dropdown menu to begin exploring land use changes from 2020 to 2024.
                         </p>
-                        <div class="narrative-stats" id="narrativeStats">
-                            <!-- Dynamic stats will appear here -->
+                        <div class="narrative-stats">
+                            <p>Data available for multiple sites with detailed land use categories including Water, Trees, Crops, Built Area, and more.</p>
                         </div>
                         <div class="narrative-insights">
                             <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
@@ -41,6 +40,7 @@
                                 <li>Track changes in land cover percentages over time</li>
                                 <li>Monitor urbanization and agricultural expansion</li>
                                 <li>Understand environmental transformation patterns</li>
+                                <li>Analyze the impact of development on natural resources</li>
                             </ul>
                         </div>
                     </div>
@@ -52,6 +52,7 @@
                         <label for="siteSelect"><i class="fas fa-map-marker-alt"></i> Select Site:</label>
                         <select id="siteSelect" class="site-select">
                             <option value="">-- Choose a site --</option>
+                            <!-- Sites will be populated by JavaScript -->
                         </select>
                     </div>
                     
@@ -74,8 +75,8 @@
                             <span>2020-2024 Timeline</span>
                         </span>
                         <span class="info-item">
-                            <i class="fas fa-expand-alt"></i>
-                            <span>Cumulative Percentage View</span>
+                            <i class="fas fa-percentage"></i>
+                            <span>Percentage Values Displayed</span>
                         </span>
                     </div>
                 </div>
@@ -83,8 +84,6 @@
                 <div class="chart-container">
                     <canvas id="mainChart"></canvas>
                 </div>
-                
-                <!-- Data Table Removed as requested -->
                 
                 <div class="timeline-container">
                     <h3><i class="fas fa-chart-line"></i> Change Progression</h3>
