@@ -8,7 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -22,37 +21,6 @@
 
         <div class="main-content">
             <div class="left-panel">
-                <!-- File Upload Section -->
-                <div class="upload-section">
-                    <div class="upload-header">
-                        <i class="fas fa-upload"></i>
-                        <h3>Upload Excel Files</h3>
-                    </div>
-                    <div class="upload-instructions">
-                        <p>Upload your Excel files for each year:</p>
-                    </div>
-                    <div class="file-upload-grid">
-                        <div class="file-upload-item">
-                            <label for="file2020">2020 Data</label>
-                            <input type="file" id="file2020" accept=".xlsx, .xls" data-year="2020">
-                            <div class="file-status" id="status2020">Not uploaded</div>
-                        </div>
-                        <div class="file-upload-item">
-                            <label for="file2022">2022 Data</label>
-                            <input type="file" id="file2022" accept=".xlsx, .xls" data-year="2022">
-                            <div class="file-status" id="status2022">Not uploaded</div>
-                        </div>
-                        <div class="file-upload-item">
-                            <label for="file2024">2024 Data</label>
-                            <input type="file" id="file2024" accept=".xlsx, .xls" data-year="2024">
-                            <div class="file-status" id="status2024">Not uploaded</div>
-                        </div>
-                    </div>
-                    <button id="loadDataBtn" class="load-data-btn">
-                        <i class="fas fa-database"></i> Load & Process Data
-                    </button>
-                </div>
-
                 <!-- Narrative Section -->
                 <div class="narrative-section">
                     <div class="narrative-header">
@@ -61,10 +29,13 @@
                     </div>
                     <div class="narrative-content" id="narrativeContent">
                         <p class="narrative-text">
-                            Welcome to the Land Use Variation Analyzer. Upload your Excel files for 2020, 2022, and 2024, then select a site to begin exploring land use changes.
+                            Welcome to the Land Use Variation Analyzer. Loading data for analysis...
                         </p>
-                        <div class="narrative-stats">
-                            <p>Upload Excel files with the exact structure as your sample data. The application will automatically read and visualize the data.</p>
+                        <div class="narrative-stats" id="narrativeStats">
+                            <div class="loading-indicator">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Loading data from repository...</span>
+                            </div>
                         </div>
                         <div class="narrative-insights">
                             <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
@@ -83,7 +54,7 @@
                     <div class="form-group">
                         <label for="siteSelect"><i class="fas fa-map-marker-alt"></i> Select Site:</label>
                         <select id="siteSelect" class="site-select" disabled>
-                            <option value="">-- Upload data first --</option>
+                            <option value="">-- Loading data --</option>
                         </select>
                     </div>
                     
@@ -98,16 +69,6 @@
             </div>
 
             <div class="visualization-area">
-                <div class="data-status" id="dataStatus">
-                    <div class="status-message">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <div>
-                            <h4>Awaiting Data Upload</h4>
-                            <p>Please upload your Excel files to begin visualization</p>
-                        </div>
-                    </div>
-                </div>
-                
                 <div class="chart-header">
                     <h2><i class="fas fa-chart-bar"></i> Land Use Distribution</h2>
                     <div class="chart-info">
@@ -123,13 +84,20 @@
                 </div>
                 
                 <div class="chart-container">
-                    <canvas id="mainChart"></canvas>
+                    <div class="loading-chart" id="loadingChart">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading visualization...</p>
+                    </div>
+                    <canvas id="mainChart" style="display: none;"></canvas>
                 </div>
                 
                 <div class="timeline-container">
                     <h3><i class="fas fa-chart-line"></i> Change Progression</h3>
                     <div class="timeline" id="timeline">
-                        <!-- Timeline will be populated by JavaScript -->
+                        <div class="loading-timeline">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Timeline data loading...</span>
+                        </div>
                     </div>
                 </div>
             </div>
