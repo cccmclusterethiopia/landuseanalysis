@@ -10,12 +10,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
-    <!-- Leaflet GeoTIFF Plugin -->
-    <script src="https://unpkg.com/georaster"></script>
-    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Earth Engine API -->
+    <script src="https://cdn.jsdelivr.net/npm/@google/earthengine@0.1.327/build/browser.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -59,13 +58,22 @@
                         <div id="map"></div>
                         <div class="map-controls">
                             <div class="map-layer-control">
-                                <label><i class="fas fa-layer-group"></i> Map Year:</label>
+                                <label><i class="fas fa-layer-group"></i> Map Source:</label>
                                 <div class="layer-buttons">
-                                    <button class="layer-btn active" data-year="2024">2024</button>
-                                    <button class="layer-btn" data-year="2022">2022</button>
-                                    <button class="layer-btn" data-year="2020">2020</button>
-                                    <button class="layer-btn" data-year="satellite">Satellite</button>
+                                    <button class="layer-btn active" data-source="dynamic">Dynamic GEE</button>
+                                    <button class="layer-btn" data-source="sentinel">Sentinel-2</button>
+                                    <button class="layer-btn" data-source="landsat">Landsat</button>
                                 </div>
+                            </div>
+                            <div class="year-selector">
+                                <label><i class="fas fa-calendar-alt"></i> Year:</label>
+                                <select id="yearSelect" class="year-select">
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2021">2021</option>
+                                    <option value="2020">2020</option>
+                                </select>
                             </div>
                             <div class="map-info">
                                 <div class="info-item">
@@ -73,8 +81,8 @@
                                     <span id="selectedSiteInfo">No site selected</span>
                                 </div>
                                 <div class="info-item">
-                                    <i class="fas fa-layer-group"></i>
-                                    <span id="currentLayer">2024 Land Use</span>
+                                    <i class="fas fa-satellite"></i>
+                                    <span id="currentLayer">GEE Dynamic Layer</span>
                                 </div>
                             </div>
                         </div>
@@ -148,7 +156,7 @@
     </div>
 
     <footer>
-        <p>Data Source: Land Use Analysis 2020-2024 | Created for Environmental Monitoring | <i class="fas fa-leaf"></i> Sustainable Development</p>
+        <p>Data Source: Land Use Analysis 2020-2024 | <i class="fas fa-satellite"></i> Google Earth Engine | <i class="fas fa-leaf"></i> Sustainable Development</p>
     </footer>
 
     <!-- Leaflet JS -->
