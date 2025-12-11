@@ -800,3 +800,166 @@ footer i {
 .fa-spin {
     animation: spin 1s linear infinite;
 }
+
+/* Add these to your existing CSS */
+
+/* Year Selector */
+.year-selector {
+    margin: 1rem 0;
+}
+
+.year-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.year-select {
+    width: 100%;
+    padding: 0.6rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.year-select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+}
+
+/* GEE Authentication */
+.gee-auth {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.auth-btn {
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.auth-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.auth-status.authenticated {
+    color: #34a853;
+}
+
+.auth-status.not-authenticated {
+    color: #ea4335;
+}
+
+/* Loading overlay for GEE */
+.gee-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: 8px;
+}
+
+.gee-loading i {
+    font-size: 2rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.gee-loading p {
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+
+/* Update existing map controls */
+.map-controls {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.map-layer-control {
+    margin-bottom: 1rem;
+}
+
+.layer-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.layer-btn {
+    padding: 0.6rem;
+    border: 2px solid var(--border-color);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.layer-btn:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+.layer-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.layer-btn[data-source="dynamic"] {
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: white;
+}
+
+.layer-btn[data-source="sentinel"] {
+    background: linear-gradient(135deg, #fbbc05, #ea4335);
+    color: white;
+}
+
+.layer-btn[data-source="landsat"] {
+    background: linear-gradient(135deg, #4285f4, #ea4335);
+    color: white;
+}
