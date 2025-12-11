@@ -221,11 +221,12 @@ h1 {
     margin-bottom: 0.8rem;
     font-weight: 600;
     color: var(--primary-color);
+    font-size: 0.9rem;
 }
 
 .layer-buttons {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.5rem;
 }
 
@@ -250,6 +251,100 @@ h1 {
     background: var(--secondary-color);
     color: white;
     border-color: var(--secondary-color);
+}
+
+.layer-btn[data-layer="sentinel"] {
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: white;
+    border-color: #34a853;
+}
+
+.layer-btn[data-layer="landsat"] {
+    background: linear-gradient(135deg, #fbbc05, #ea4335);
+    color: white;
+    border-color: #ea4335;
+}
+
+.layer-btn[data-layer="sites"] {
+    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+    color: white;
+    border-color: #9b59b6;
+}
+
+/* Year Selector */
+.year-selector {
+    margin: 1rem 0;
+}
+
+.year-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.year-select {
+    width: 100%;
+    padding: 0.6rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.year-select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+}
+
+/* Map Tools */
+.map-tools {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.map-tool-btn {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, var(--secondary-color), #219653);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.map-tool-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#clearDraw {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+#clearDraw:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+#fetchSentinelData {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+#fetchSentinelData:hover {
+    background: linear-gradient(135deg, #2980b9, #2471a3);
 }
 
 .map-info {
@@ -406,6 +501,157 @@ label {
 
 .category-card.active .category-toggle i {
     opacity: 1;
+}
+
+/* Sentinel Results Panel */
+.sentinel-results {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    display: none;
+}
+
+.sentinel-results h4 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.results-content {
+    font-size: 0.9rem;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4a5568;
+    padding: 1rem;
+    justify-content: center;
+}
+
+.loading i {
+    color: var(--secondary-color);
+}
+
+.error {
+    color: #e74c3c;
+    text-align: center;
+    padding: 1rem;
+}
+
+.error i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.results-summary {
+    background: white;
+    padding: 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.results-summary h5 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.result-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.3rem;
+    font-size: 0.85rem;
+}
+
+.result-item i {
+    color: var(--secondary-color);
+    width: 16px;
+    font-size: 0.9rem;
+}
+
+.result-item strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.land-use-breakdown {
+    margin-top: 1.5rem;
+    background: white;
+    padding: 1.2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.land-use-breakdown h6 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.result-category {
+    margin-bottom: 1rem;
+}
+
+.category-name {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.category-value {
+    float: right;
+    font-weight: 600;
+    color: var(--secondary-color);
+    font-size: 0.85rem;
+}
+
+.category-bar {
+    height: 8px;
+    background: #e1e5eb;
+    border-radius: 4px;
+    margin-top: 0.3rem;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+    border-radius: 4px;
+    transition: width 1s ease;
+}
+
+.data-source {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px dashed var(--border-color);
+    color: #718096;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.data-source small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
 }
 
 /* Visualization Area */
@@ -688,6 +934,14 @@ footer i {
     color: #a0aec0;
 }
 
+.no-data {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    color: #718096;
+    font-style: italic;
+}
+
 /* Map marker styles */
 .custom-marker {
     background: var(--secondary-color);
@@ -717,6 +971,27 @@ footer i {
     background: var(--accent-color);
     width: 50px;
     height: 50px;
+}
+
+/* Site boundary styling */
+.site-boundary-tooltip {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.85rem;
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
 }
 
 /* Responsive Design */
@@ -783,183 +1058,54 @@ footer i {
     }
     
     .layer-buttons {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
     
     #map {
         height: 300px;
     }
+    
+    .map-tools {
+        flex-direction: column;
+    }
+    
+    .map-tool-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .sentinel-results {
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .header-icon {
+        font-size: 2.5rem;
+    }
 }
 
-/* Loading animation */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.fa-spin {
-    animation: spin 1s linear infinite;
-}
-
-/* Add these to your existing CSS */
-
-/* Year Selector */
-.year-selector {
-    margin: 1rem 0;
-}
-
-.year-selector label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    font-size: 0.9rem;
-}
-
-.year-select {
-    width: 100%;
-    padding: 0.6rem;
-    border: 2px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.9rem;
-    background: white;
-    color: var(--text-color);
-    transition: all 0.3s ease;
-}
-
-.year-select:focus {
-    outline: none;
-    border-color: var(--secondary-color);
-    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
-}
-
-/* GEE Authentication */
-.gee-auth {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-.auth-btn {
-    padding: 0.8rem 1.5rem;
-    background: linear-gradient(135deg, #4285f4, #34a853);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.auth-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.auth-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.auth-status.authenticated {
-    color: #34a853;
-}
-
-.auth-status.not-authenticated {
-    color: #ea4335;
-}
-
-/* Loading overlay for GEE */
-.gee-loading {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    border-radius: 8px;
-}
-
-.gee-loading i {
-    font-size: 2rem;
-    color: var(--secondary-color);
-    margin-bottom: 1rem;
-}
-
-.gee-loading p {
-    color: #4a5568;
-    font-size: 0.9rem;
-}
-
-/* Update existing map controls */
-.map-controls {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.map-layer-control {
-    margin-bottom: 1rem;
-}
-
-.layer-buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-}
-
-.layer-btn {
-    padding: 0.6rem;
-    border: 2px solid var(--border-color);
-    background: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    text-align: center;
-}
-
-.layer-btn:hover {
-    background: #edf2f7;
-    border-color: #cbd5e0;
-}
-
-.layer-btn.active {
-    background: var(--secondary-color);
-    color: white;
-    border-color: var(--secondary-color);
-}
-
-.layer-btn[data-source="dynamic"] {
-    background: linear-gradient(135deg, #4285f4, #34a853);
-    color: white;
-}
-
-.layer-btn[data-source="sentinel"] {
-    background: linear-gradient(135deg, #fbbc05, #ea4335);
-    color: white;
-}
-
-.layer-btn[data-source="landsat"] {
-    background: linear-gradient(135deg, #4285f4, #ea4335);
-    color: white;
+/* Print styles */
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+    
+    .container {
+        box-shadow: none;
+        border-radius: 0;
+    }
+    
+    .map-controls,
+    .map-tools,
+    .retry-btn {
+        display: none;
+    }
+    
+    #map {
+        height: 300px;
+    }
 }
