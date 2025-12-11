@@ -576,3 +576,64 @@ footer i {
 .fa-spin {
     animation: spin 1s linear infinite;
 }
+/* Add to existing CSS */
+.data-status-panel {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 4px solid var(--secondary-color);
+    margin-bottom: 1.5rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid #e1e5eb;
+}
+
+.status-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.status-label {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.status-value {
+    font-weight: 700;
+}
+
+.status-value.loaded {
+    color: #27ae60;
+}
+
+.status-value.error {
+    color: #e74c3c;
+}
+
+.status-value.loading {
+    color: #f39c12;
+}
+
+.retry-btn {
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, var(--secondary-color), #219653);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
