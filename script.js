@@ -28,238 +28,151 @@ class LandUseVisualizer {
             rangeland: '#8e44ad'
         };
         this.chart = null;
-        this.uploadedFiles = {
-            '2020': null,
-            '2022': null,
-            '2024': null
-        };
         
         this.init();
     }
     
-    init() {
+    async init() {
+        this.showLoadingState();
+        await this.loadData();
         this.setupEventListeners();
         this.populateCategoryCards();
-        this.updateNarrative();
-        this.updateDataStatus();
-    }
-    
-    setupEventListeners() {
-        // File upload listeners
-        ['2020', '2022', '2024'].forEach(year => {
-            const fileInput = document.getElementById(`file${year}`);
-            fileInput.addEventListener('change', (e) => this.handleFileUpload(e, year));
-        });
+        this.populateSiteSelect();
         
-        // Load data button
-        document.getElementById('loadDataBtn').addEventListener('click', () => this.processAllFiles());
-        
-        // Site selection
-        document.getElementById('siteSelect').addEventListener('change', (e) => {
-            this.currentSite = e.target.value;
-            if (this.currentSite) {
-                this.updateVisualization();
-                this.updateNarrative();
-                this.updateCategoryPercentages();
-            }
-        });
-    }
-    
-    handleFileUpload(event, year) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const statusElement = document.getElementById(`status${year}`);
-        statusElement.textContent = `Uploading ${file.name}...`;
-        statusElement.className = 'file-status';
-        
-        this.uploadedFiles[year] = file;
-        statusElement.textContent = `${file.name} uploaded`;
-        statusElement.classList.add('uploaded');
-        
-        // Enable load button if all files are uploaded
-        this.checkFilesReady();
-    }
-    
-    checkFilesReady() {
-        const allUploaded = Object.values(this.uploadedFiles).every(file => file !== null);
-        const loadBtn = document.getElementById('loadDataBtn');
-        loadBtn.disabled = !allUploaded;
-        
-        if (allUploaded) {
-            this.updateDataStatus('All files uploaded. Click "Load & Process Data" to continue.');
+        if (this.data['2020'] && this.data['2020'].length > 0) {
+            this.currentSite = this.data['2020'][0].Site_Name;
+            this.updateVisualization();
+            this.updateNarrative();
+            this.updateCategoryPercentages();
         }
     }
     
-    updateDataStatus(message = null) {
-        const statusElement = document.getElementById('dataStatus');
-        
-        if (Object.values(this.data).every(d => d !== null)) {
-            // Data is loaded
-            statusElement.style.display = 'none';
-            document.getElementById('siteSelect').disabled = false;
-        } else if (message) {
-            statusElement.innerHTML = `
-                <div class="status-message">
-                    <i class="fas fa-database"></i>
-                    <div>
-                        <h4>Ready to Process</h4>
-                        <p>${message}</p>
-                    </div>
-                </div>
-            `;
-            statusElement.style.display = 'block';
-        } else {
-            statusElement.innerHTML = `
-                <div class="status-message">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <div>
-                        <h4>Awaiting Data Upload</h4>
-                        <p>Please upload your Excel files for 2020, 2022, and 2024 to begin visualization</p>
-                    </div>
-                </div>
-            `;
-            statusElement.style.display = 'block';
-        }
+    showLoadingState() {
+        // Show loading indicators
+        document.getElementById('loadingChart').style.display = 'flex';
+        document.getElementById('mainChart').style.display = 'none';
     }
     
-    async processAllFiles() {
-        const loadBtn = document.getElementById('loadDataBtn');
-        loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        loadBtn.disabled = true;
-        
+    hideLoadingState() {
+        // Hide loading indicators
+        document.getElementById('loadingChart').style.display = 'none';
+        document.getElementById('mainChart').style.display = 'block';
+    }
+    
+    async loadData() {
         try {
-            // Process each file
-            for (const year of ['2020', '2022', '2024']) {
-                if (this.uploadedFiles[year]) {
-                    this.data[year] = await this.readExcelFile(this.uploadedFiles[year], year);
-                    console.log(`Processed ${year} data:`, this.data[year]);
+            const years = ['2020', '2022', '2024'];
+            
+            for (const year of years) {
+                try {
+                    const response = await fetch(`data/${year}-Result-exc.json`);
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${year} data`);
+                    }
+                    this.data[year] = await response.json();
+                    console.log(`Loaded ${year} data:`, this.data[year]);
+                } catch (error) {
+                    console.error(`Error loading ${year} data:`, error);
+                    this.data[year] = [];
                 }
             }
             
-            // Populate site selection
-            this.populateSiteSelect();
-            
-            // Update UI
-            this.updateDataStatus();
-            
-            // Show success message
-            this.updateDataStatus('Data loaded successfully! Select a site to begin visualization.');
-            
-            // Enable site selection
-            document.getElementById('siteSelect').disabled = false;
-            
-            // If we have data, select first site automatically
-            if (this.data['2020'] && this.data['2020'].length > 0) {
-                document.getElementById('siteSelect').value = this.data['2020'][0].Site_Name;
-                this.currentSite = this.data['2020'][0].Site_Name;
-                this.updateVisualization();
-                this.updateNarrative();
-                this.updateCategoryPercentages();
-            }
+            // Clean and standardize the data
+            this.cleanData();
             
         } catch (error) {
-            console.error('Error processing files:', error);
-            this.updateDataStatus('Error processing files. Please check the console for details.');
-        } finally {
-            loadBtn.innerHTML = '<i class="fas fa-database"></i> Load & Process Data';
-            loadBtn.disabled = false;
+            console.error('Error loading data:', error);
+            this.showErrorMessage('Failed to load data. Please check if JSON files are in the data folder.');
         }
     }
     
-    readExcelFile(file, year) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                try {
-                    const data = e.target.result;
-                    const workbook = XLSX.read(data, { type: 'binary' });
+    cleanData() {
+        // Ensure all data has consistent field names
+        Object.keys(this.data).forEach(year => {
+            if (this.data[year]) {
+                this.data[year] = this.data[year].map(item => {
+                    const cleaned = {};
                     
-                    // Get first sheet
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
+                    // Handle different column name formats
+                    const columnMapping = {
+                        'Site_Name': ['Site_Name', 'Site Name', 'site_name'],
+                        'Total_Area_sq_km': ['Total_Area_sq_km', 'Total_Area_sq km', 'Total Area (sq km)', 'Total_Area'],
+                        'Water_Percent': ['Water_Percent', 'Water Percent', 'water_percent'],
+                        'Trees_Percent': ['Trees_Percent', 'Trees Percent', 'trees_percent'],
+                        'FloodVegetation_Percent': ['FloodVegetation_Percent', 'FloodVegetation Percent', 'Flood_Vegetation_Percent'],
+                        'Crops_Percent': ['Crops_Percent', 'Crops Percent', 'crops_percent'],
+                        'BuiltArea_Percent': ['BuiltArea_Percent', 'BuiltArea Percent', 'Built_Area_Percent'],
+                        'BareGround_Percent': ['BareGround_Percent', 'BareGround Percent', 'Bare_Ground_Percent'],
+                        'Rangeland_Percent': ['Rangeland_Percent', 'Rangeland Percent', 'rangeland_percent']
+                    };
                     
-                    // Convert to JSON
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    // Clean and standardize the data
-                    const cleanedData = jsonData.map(row => {
-                        const cleanedRow = {};
+                    // Map columns
+                    Object.keys(columnMapping).forEach(standardKey => {
+                        const possibleKeys = columnMapping[standardKey];
+                        let foundValue = null;
                         
-                        // Clean column names and handle your specific structure
-                        Object.keys(row).forEach(key => {
-                            // Remove extra spaces and standardize column names
-                            const cleanKey = key.trim()
-                                .replace(/\s+/g, '_')
-                                .replace(/\(/g, '')
-                                .replace(/\)/g, '');
-                            
-                            // Handle special cases for 2024 data (Class_11)
-                            if (cleanKey === 'Class_11_Area' && year === '2024') {
-                                // For 2024, map Class_11 to Rangeland
-                                cleanedRow['Rangeland_Area'] = row[key];
-                            } else if (cleanKey === 'Class_11_Percent' && year === '2024') {
-                                cleanedRow['Rangeland_Percent'] = row[key];
-                            } else {
-                                cleanedRow[cleanKey] = row[key];
+                        for (const key of possibleKeys) {
+                            if (item[key] !== undefined) {
+                                foundValue = item[key];
+                                break;
                             }
-                        });
+                        }
                         
-                        // Ensure all required fields exist
-                        const requiredFields = [
-                            'Site_Name', 'Total_Area_sq_km', 'Water_Percent', 'Trees_Percent',
-                            'FloodVegetation_Percent', 'Crops_Percent', 'BuiltArea_Percent',
-                            'BareGround_Percent', 'Rangeland_Percent'
-                        ];
-                        
-                        requiredFields.forEach(field => {
-                            if (cleanedRow[field] === undefined) {
-                                cleanedRow[field] = 0;
-                            }
-                        });
-                        
-                        return cleanedRow;
+                        cleaned[standardKey] = foundValue !== null ? foundValue : 0;
                     });
                     
-                    resolve(cleanedData);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            
-            reader.onerror = function(error) {
-                reject(error);
-            };
-            
-            reader.readAsBinaryString(file);
+                    // Handle 2024 Class_11 mapping to Rangeland
+                    if (year === '2024') {
+                        if (item['Class_11_Percent'] !== undefined) {
+                            cleaned['Rangeland_Percent'] = item['Class_11_Percent'];
+                        }
+                    }
+                    
+                    return cleaned;
+                });
+            }
         });
+    }
+    
+    showErrorMessage(message) {
+        const narrativeContent = document.getElementById('narrativeContent');
+        narrativeContent.innerHTML = `
+            <p class="narrative-text" style="color: #e74c3c;">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+            </p>
+            <div class="narrative-stats">
+                <p>Please ensure your JSON files are in the <code>data/</code> folder with these exact names:</p>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li><code>2020-Result-exc.json</code></li>
+                    <li><code>2022-Result-exc.json</code></li>
+                    <li><code>2024-Result-exc.json</code></li>
+                </ul>
+            </div>
+        `;
     }
     
     populateSiteSelect() {
         const siteSelect = document.getElementById('siteSelect');
         siteSelect.innerHTML = '<option value="">-- Select a site --</option>';
         
-        // Get unique site names from 2020 data
+        // Get unique site names from all years
         const sites = new Set();
-        if (this.data['2020']) {
-            this.data['2020'].forEach(site => {
-                if (site.Site_Name) {
-                    sites.add(site.Site_Name);
-                }
-            });
-        }
         
-        // Add sites from other years if not in 2020
-        ['2022', '2024'].forEach(year => {
+        Object.keys(this.data).forEach(year => {
             if (this.data[year]) {
-                this.data[year].forEach(site => {
-                    if (site.Site_Name && !sites.has(site.Site_Name)) {
-                        sites.add(site.Site_Name);
+                this.data[year].forEach(item => {
+                    if (item.Site_Name) {
+                        sites.add(item.Site_Name);
                     }
                 });
             }
         });
+        
+        if (sites.size === 0) {
+            siteSelect.innerHTML = '<option value="">No sites found in data</option>';
+            siteSelect.disabled = true;
+            return;
+        }
         
         sites.forEach(site => {
             const option = document.createElement('option');
@@ -268,7 +181,14 @@ class LandUseVisualizer {
             siteSelect.appendChild(option);
         });
         
-        siteSelect.disabled = sites.size === 0;
+        siteSelect.disabled = false;
+        
+        // Select first site by default
+        if (sites.size > 0) {
+            const firstSite = Array.from(sites)[0];
+            siteSelect.value = firstSite;
+            this.currentSite = firstSite;
+        }
     }
     
     populateCategoryCards() {
@@ -305,6 +225,17 @@ class LandUseVisualizer {
             });
             
             container.appendChild(card);
+        });
+    }
+    
+    setupEventListeners() {
+        document.getElementById('siteSelect').addEventListener('change', (e) => {
+            this.currentSite = e.target.value;
+            if (this.currentSite) {
+                this.updateVisualization();
+                this.updateNarrative();
+                this.updateCategoryPercentages();
+            }
         });
     }
     
@@ -354,6 +285,8 @@ class LandUseVisualizer {
     
     updateVisualization() {
         if (!this.currentSite) return;
+        
+        this.hideLoadingState();
         
         const years = ['2020', '2022', '2024'];
         const categories = {
@@ -576,6 +509,11 @@ class LandUseVisualizer {
     
     updateNarrative() {
         if (!this.currentSite) {
+            document.getElementById('narrativeContent').innerHTML = `
+                <p class="narrative-text">
+                    Please select a site from the dropdown to view detailed analysis.
+                </p>
+            `;
             return;
         }
         
@@ -585,7 +523,7 @@ class LandUseVisualizer {
         if (!siteData2020 || !siteData2024) {
             document.getElementById('narrativeContent').innerHTML = `
                 <p class="narrative-text">
-                    Data for <strong>${this.currentSite}</strong> is incomplete. Please ensure all year data is available for this site.
+                    Complete data not available for <strong>${this.currentSite}</strong>. Some years may be missing.
                 </p>
             `;
             return;
