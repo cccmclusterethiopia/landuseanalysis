@@ -1,7 +1,10 @@
 class LandUseVisualizer {
     constructor() {
-        // Embedded data - NO FILE LOADING NEEDED
-        this.data = this.createSampleData();
+        this.data = {
+            '2020': null,
+            '2022': null,
+            '2024': null
+        };
         this.currentSite = null;
         this.selectedCategories = new Set([
             'water', 'trees', 'floodVegetation', 'crops', 'builtArea', 'bareGround', 'rangeland'
@@ -25,250 +28,238 @@ class LandUseVisualizer {
             rangeland: '#8e44ad'
         };
         this.chart = null;
+        this.uploadedFiles = {
+            '2020': null,
+            '2022': null,
+            '2024': null
+        };
         
         this.init();
     }
     
-    createSampleData() {
-        // Using your provided sample data and adding more for demonstration
-        return {
-            '2020': [
-                {
-                    "Site_Name": "Abiyiadi TVET College",
-                    "Total_Area_sq_km": 1203.5,
-                    "Water_Area": 0.18,
-                    "Water_Percent": 0.02,
-                    "Trees_Area": 0.58,
-                    "Trees_Percent": 0.05,
-                    "FloodVegetation_Area": 0.01,
-                    "FloodVegetation_Percent": 0,
-                    "Crops_Area": 165.61,
-                    "Crops_Percent": 13.76,
-                    "BuiltArea_Area": 494.65,
-                    "BuiltArea_Percent": 41.1,
-                    "BareGround_Area": 2.77,
-                    "BareGround_Percent": 0.23,
-                    "Rangeland_Area": 539.69,
-                    "Rangeland_Percent": 44.84
-                },
-                {
-                    "Site_Name": "Abreha We'atsbha Elementary School",
-                    "Total_Area_sq_km": 1135.89,
-                    "Water_Area": 0.06,
-                    "Water_Percent": 0,
-                    "Trees_Area": 22.24,
-                    "Trees_Percent": 1.96,
-                    "FloodVegetation_Area": 0,
-                    "FloodVegetation_Percent": 0,
-                    "Crops_Area": 321.02,
-                    "Crops_Percent": 28.26,
-                    "BuiltArea_Area": 120.07,
-                    "BuiltArea_Percent": 10.57,
-                    "BareGround_Area": 0.42,
-                    "BareGround_Percent": 0.04,
-                    "Rangeland_Area": 672.08,
-                    "Rangeland_Percent": 59.17
-                },
-                {
-                    "Site_Name": "Adigrat University",
-                    "Total_Area_sq_km": 1850.25,
-                    "Water_Area": 1.25,
-                    "Water_Percent": 0.07,
-                    "Trees_Area": 45.60,
-                    "Trees_Percent": 2.46,
-                    "FloodVegetation_Area": 0.85,
-                    "FloodVegetation_Percent": 0.05,
-                    "Crops_Area": 420.35,
-                    "Crops_Percent": 22.72,
-                    "BuiltArea_Area": 280.45,
-                    "BuiltArea_Percent": 15.16,
-                    "BareGround_Area": 3.25,
-                    "BareGround_Percent": 0.18,
-                    "Rangeland_Area": 1098.50,
-                    "Rangeland_Percent": 59.36
-                },
-                {
-                    "Site_Name": "Mekelle Industrial Park",
-                    "Total_Area_sq_km": 950.75,
-                    "Water_Area": 0.35,
-                    "Water_Percent": 0.04,
-                    "Trees_Area": 8.90,
-                    "Trees_Percent": 0.94,
-                    "FloodVegetation_Area": 0.12,
-                    "FloodVegetation_Percent": 0.01,
-                    "Crops_Area": 180.25,
-                    "Crops_Percent": 18.96,
-                    "BuiltArea_Area": 420.80,
-                    "BuiltArea_Percent": 44.26,
-                    "BareGround_Area": 5.60,
-                    "BareGround_Percent": 0.59,
-                    "Rangeland_Area": 334.73,
-                    "Rangeland_Percent": 35.20
-                }
-            ],
-            '2022': [
-                {
-                    "Site_Name": "Abiyiadi TVET College",
-                    "Total_Area_sq_km": 1205.2,
-                    "Water_Area": 0.20,
-                    "Water_Percent": 0.02,
-                    "Trees_Area": 0.65,
-                    "Trees_Percent": 0.05,
-                    "FloodVegetation_Area": 0.01,
-                    "FloodVegetation_Percent": 0,
-                    "Crops_Area": 168.45,
-                    "Crops_Percent": 13.98,
-                    "BuiltArea_Area": 520.30,
-                    "BuiltArea_Percent": 43.18,
-                    "BareGround_Area": 2.95,
-                    "BareGround_Percent": 0.24,
-                    "Rangeland_Area": 512.64,
-                    "Rangeland_Percent": 42.53
-                },
-                {
-                    "Site_Name": "Abreha We'atsbha Elementary School",
-                    "Total_Area_sq_km": 1136.50,
-                    "Water_Area": 0.08,
-                    "Water_Percent": 0.01,
-                    "Trees_Area": 23.15,
-                    "Trees_Percent": 2.04,
-                    "FloodVegetation_Area": 0.05,
-                    "FloodVegetation_Percent": 0,
-                    "Crops_Area": 325.80,
-                    "Crops_Percent": 28.67,
-                    "BuiltArea_Area": 135.25,
-                    "BuiltArea_Percent": 11.90,
-                    "BareGround_Area": 0.50,
-                    "BareGround_Percent": 0.04,
-                    "Rangeland_Area": 651.67,
-                    "Rangeland_Percent": 57.34
-                },
-                {
-                    "Site_Name": "Adigrat University",
-                    "Total_Area_sq_km": 1852.80,
-                    "Water_Area": 1.30,
-                    "Water_Percent": 0.07,
-                    "Trees_Area": 46.80,
-                    "Trees_Percent": 2.53,
-                    "FloodVegetation_Area": 0.90,
-                    "FloodVegetation_Percent": 0.05,
-                    "Crops_Area": 425.20,
-                    "Crops_Percent": 22.95,
-                    "BuiltArea_Area": 310.25,
-                    "BuiltArea_Percent": 16.74,
-                    "BareGround_Area": 3.40,
-                    "BareGround_Percent": 0.18,
-                    "Rangeland_Area": 1064.95,
-                    "Rangeland_Percent": 57.48
-                },
-                {
-                    "Site_Name": "Mekelle Industrial Park",
-                    "Total_Area_sq_km": 952.40,
-                    "Water_Area": 0.38,
-                    "Water_Percent": 0.04,
-                    "Trees_Area": 9.25,
-                    "Trees_Percent": 0.97,
-                    "FloodVegetation_Area": 0.15,
-                    "FloodVegetation_Percent": 0.02,
-                    "Crops_Area": 182.80,
-                    "Crops_Percent": 19.20,
-                    "BuiltArea_Area": 450.60,
-                    "BuiltArea_Percent": 47.32,
-                    "BareGround_Area": 6.25,
-                    "BareGround_Percent": 0.66,
-                    "Rangeland_Area": 302.97,
-                    "Rangeland_Percent": 31.79
-                }
-            ],
-            '2024': [
-                {
-                    "Site_Name": "Abiyiadi TVET College",
-                    "Total_Area_sq_km": 1208.75,
-                    "Water_Area": 0.22,
-                    "Water_Percent": 0.02,
-                    "Trees_Area": 0.72,
-                    "Trees_Percent": 0.06,
-                    "FloodVegetation_Area": 0.02,
-                    "FloodVegetation_Percent": 0,
-                    "Crops_Area": 172.30,
-                    "Crops_Percent": 14.25,
-                    "BuiltArea_Area": 550.45,
-                    "BuiltArea_Percent": 45.52,
-                    "BareGround_Area": 3.15,
-                    "BareGround_Percent": 0.26,
-                    "Rangeland_Area": 482.89,
-                    "Rangeland_Percent": 39.89
-                },
-                {
-                    "Site_Name": "Abreha We'atsbha Elementary School",
-                    "Total_Area_sq_km": 1137.25,
-                    "Water_Area": 0.10,
-                    "Water_Percent": 0.01,
-                    "Trees_Area": 24.80,
-                    "Trees_Percent": 2.18,
-                    "FloodVegetation_Area": 0.08,
-                    "FloodVegetation_Percent": 0.01,
-                    "Crops_Area": 330.45,
-                    "Crops_Percent": 29.05,
-                    "BuiltArea_Area": 155.80,
-                    "BuiltArea_Percent": 13.70,
-                    "BareGround_Area": 0.62,
-                    "BareGround_Percent": 0.05,
-                    "Rangeland_Area": 625.40,
-                    "Rangeland_Percent": 54.99
-                },
-                {
-                    "Site_Name": "Adigrat University",
-                    "Total_Area_sq_km": 1855.60,
-                    "Water_Area": 1.40,
-                    "Water_Percent": 0.08,
-                    "Trees_Area": 48.25,
-                    "Trees_Percent": 2.60,
-                    "FloodVegetation_Area": 1.05,
-                    "FloodVegetation_Percent": 0.06,
-                    "Crops_Area": 430.80,
-                    "Crops_Percent": 23.21,
-                    "BuiltArea_Area": 345.60,
-                    "BuiltArea_Percent": 18.62,
-                    "BareGround_Area": 3.65,
-                    "BareGround_Percent": 0.20,
-                    "Rangeland_Area": 1025.85,
-                    "Rangeland_Percent": 55.23
-                },
-                {
-                    "Site_Name": "Mekelle Industrial Park",
-                    "Total_Area_sq_km": 955.20,
-                    "Water_Area": 0.42,
-                    "Water_Percent": 0.04,
-                    "Trees_Area": 9.80,
-                    "Trees_Percent": 1.03,
-                    "FloodVegetation_Area": 0.20,
-                    "FloodVegetation_Percent": 0.02,
-                    "Crops_Area": 185.60,
-                    "Crops_Percent": 19.43,
-                    "BuiltArea_Area": 485.75,
-                    "BuiltArea_Percent": 50.85,
-                    "BareGround_Area": 7.15,
-                    "BareGround_Percent": 0.75,
-                    "Rangeland_Area": 266.38,
-                    "Rangeland_Percent": 27.88
-                }
-            ]
-        };
-    }
-    
     init() {
         this.setupEventListeners();
-        this.populateSiteSelect();
         this.populateCategoryCards();
         this.updateNarrative();
+        this.updateDataStatus();
+    }
+    
+    setupEventListeners() {
+        // File upload listeners
+        ['2020', '2022', '2024'].forEach(year => {
+            const fileInput = document.getElementById(`file${year}`);
+            fileInput.addEventListener('change', (e) => this.handleFileUpload(e, year));
+        });
+        
+        // Load data button
+        document.getElementById('loadDataBtn').addEventListener('click', () => this.processAllFiles());
+        
+        // Site selection
+        document.getElementById('siteSelect').addEventListener('change', (e) => {
+            this.currentSite = e.target.value;
+            if (this.currentSite) {
+                this.updateVisualization();
+                this.updateNarrative();
+                this.updateCategoryPercentages();
+            }
+        });
+    }
+    
+    handleFileUpload(event, year) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const statusElement = document.getElementById(`status${year}`);
+        statusElement.textContent = `Uploading ${file.name}...`;
+        statusElement.className = 'file-status';
+        
+        this.uploadedFiles[year] = file;
+        statusElement.textContent = `${file.name} uploaded`;
+        statusElement.classList.add('uploaded');
+        
+        // Enable load button if all files are uploaded
+        this.checkFilesReady();
+    }
+    
+    checkFilesReady() {
+        const allUploaded = Object.values(this.uploadedFiles).every(file => file !== null);
+        const loadBtn = document.getElementById('loadDataBtn');
+        loadBtn.disabled = !allUploaded;
+        
+        if (allUploaded) {
+            this.updateDataStatus('All files uploaded. Click "Load & Process Data" to continue.');
+        }
+    }
+    
+    updateDataStatus(message = null) {
+        const statusElement = document.getElementById('dataStatus');
+        
+        if (Object.values(this.data).every(d => d !== null)) {
+            // Data is loaded
+            statusElement.style.display = 'none';
+            document.getElementById('siteSelect').disabled = false;
+        } else if (message) {
+            statusElement.innerHTML = `
+                <div class="status-message">
+                    <i class="fas fa-database"></i>
+                    <div>
+                        <h4>Ready to Process</h4>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+            statusElement.style.display = 'block';
+        } else {
+            statusElement.innerHTML = `
+                <div class="status-message">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <div>
+                        <h4>Awaiting Data Upload</h4>
+                        <p>Please upload your Excel files for 2020, 2022, and 2024 to begin visualization</p>
+                    </div>
+                </div>
+            `;
+            statusElement.style.display = 'block';
+        }
+    }
+    
+    async processAllFiles() {
+        const loadBtn = document.getElementById('loadDataBtn');
+        loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        loadBtn.disabled = true;
+        
+        try {
+            // Process each file
+            for (const year of ['2020', '2022', '2024']) {
+                if (this.uploadedFiles[year]) {
+                    this.data[year] = await this.readExcelFile(this.uploadedFiles[year], year);
+                    console.log(`Processed ${year} data:`, this.data[year]);
+                }
+            }
+            
+            // Populate site selection
+            this.populateSiteSelect();
+            
+            // Update UI
+            this.updateDataStatus();
+            
+            // Show success message
+            this.updateDataStatus('Data loaded successfully! Select a site to begin visualization.');
+            
+            // Enable site selection
+            document.getElementById('siteSelect').disabled = false;
+            
+            // If we have data, select first site automatically
+            if (this.data['2020'] && this.data['2020'].length > 0) {
+                document.getElementById('siteSelect').value = this.data['2020'][0].Site_Name;
+                this.currentSite = this.data['2020'][0].Site_Name;
+                this.updateVisualization();
+                this.updateNarrative();
+                this.updateCategoryPercentages();
+            }
+            
+        } catch (error) {
+            console.error('Error processing files:', error);
+            this.updateDataStatus('Error processing files. Please check the console for details.');
+        } finally {
+            loadBtn.innerHTML = '<i class="fas fa-database"></i> Load & Process Data';
+            loadBtn.disabled = false;
+        }
+    }
+    
+    readExcelFile(file, year) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    
+                    // Get first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert to JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // Clean and standardize the data
+                    const cleanedData = jsonData.map(row => {
+                        const cleanedRow = {};
+                        
+                        // Clean column names and handle your specific structure
+                        Object.keys(row).forEach(key => {
+                            // Remove extra spaces and standardize column names
+                            const cleanKey = key.trim()
+                                .replace(/\s+/g, '_')
+                                .replace(/\(/g, '')
+                                .replace(/\)/g, '');
+                            
+                            // Handle special cases for 2024 data (Class_11)
+                            if (cleanKey === 'Class_11_Area' && year === '2024') {
+                                // For 2024, map Class_11 to Rangeland
+                                cleanedRow['Rangeland_Area'] = row[key];
+                            } else if (cleanKey === 'Class_11_Percent' && year === '2024') {
+                                cleanedRow['Rangeland_Percent'] = row[key];
+                            } else {
+                                cleanedRow[cleanKey] = row[key];
+                            }
+                        });
+                        
+                        // Ensure all required fields exist
+                        const requiredFields = [
+                            'Site_Name', 'Total_Area_sq_km', 'Water_Percent', 'Trees_Percent',
+                            'FloodVegetation_Percent', 'Crops_Percent', 'BuiltArea_Percent',
+                            'BareGround_Percent', 'Rangeland_Percent'
+                        ];
+                        
+                        requiredFields.forEach(field => {
+                            if (cleanedRow[field] === undefined) {
+                                cleanedRow[field] = 0;
+                            }
+                        });
+                        
+                        return cleanedRow;
+                    });
+                    
+                    resolve(cleanedData);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            reader.onerror = function(error) {
+                reject(error);
+            };
+            
+            reader.readAsBinaryString(file);
+        });
     }
     
     populateSiteSelect() {
         const siteSelect = document.getElementById('siteSelect');
+        siteSelect.innerHTML = '<option value="">-- Select a site --</option>';
         
         // Get unique site names from 2020 data
-        const sites = this.data['2020'].map(site => site.Site_Name);
+        const sites = new Set();
+        if (this.data['2020']) {
+            this.data['2020'].forEach(site => {
+                if (site.Site_Name) {
+                    sites.add(site.Site_Name);
+                }
+            });
+        }
+        
+        // Add sites from other years if not in 2020
+        ['2022', '2024'].forEach(year => {
+            if (this.data[year]) {
+                this.data[year].forEach(site => {
+                    if (site.Site_Name && !sites.has(site.Site_Name)) {
+                        sites.add(site.Site_Name);
+                    }
+                });
+            }
+        });
         
         sites.forEach(site => {
             const option = document.createElement('option');
@@ -276,6 +267,8 @@ class LandUseVisualizer {
             option.textContent = site;
             siteSelect.appendChild(option);
         });
+        
+        siteSelect.disabled = sites.size === 0;
     }
     
     populateCategoryCards() {
@@ -330,17 +323,6 @@ class LandUseVisualizer {
         }
     }
     
-    setupEventListeners() {
-        document.getElementById('siteSelect').addEventListener('change', (e) => {
-            this.currentSite = e.target.value;
-            if (this.currentSite) {
-                this.updateVisualization();
-                this.updateNarrative();
-                this.updateCategoryPercentages();
-            }
-        });
-    }
-    
     getSiteData(siteName, year) {
         if (!this.data[year]) return null;
         return this.data[year].find(site => site.Site_Name === siteName);
@@ -391,7 +373,7 @@ class LandUseVisualizer {
             const category = categories[categoryId];
             const data = years.map(year => {
                 const siteData = this.getSiteData(this.currentSite, year);
-                return siteData ? siteData[category.key] || 0 : 0;
+                return siteData ? (siteData[category.key] || 0) : 0;
             });
             
             datasets.push({
@@ -552,7 +534,10 @@ class LandUseVisualizer {
         const siteData2022 = this.getSiteData(this.currentSite, '2022');
         const siteData2024 = this.getSiteData(this.currentSite, '2024');
         
-        if (!siteData2020 || !siteData2022 || !siteData2024) return;
+        if (!siteData2020 || !siteData2022 || !siteData2024) {
+            timeline.innerHTML = '<div class="no-data">Complete data not available for all years</div>';
+            return;
+        }
         
         const timelineData = [
             { year: '2020', data: siteData2020 },
@@ -591,30 +576,20 @@ class LandUseVisualizer {
     
     updateNarrative() {
         if (!this.currentSite) {
-            document.getElementById('narrativeContent').innerHTML = `
-                <p class="narrative-text">
-                    Welcome to the Land Use Variation Analyzer. Select a site from the dropdown menu to begin exploring land use changes from 2020 to 2024.
-                </p>
-                <div class="narrative-stats">
-                    <p>Data available for multiple sites with detailed land use categories including Water, Trees, Crops, Built Area, and more.</p>
-                </div>
-                <div class="narrative-insights">
-                    <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
-                    <ul class="insights-list">
-                        <li>Track changes in land cover percentages over time</li>
-                        <li>Monitor urbanization and agricultural expansion</li>
-                        <li>Understand environmental transformation patterns</li>
-                        <li>Analyze the impact of development on natural resources</li>
-                    </ul>
-                </div>
-            `;
             return;
         }
         
         const siteData2020 = this.getSiteData(this.currentSite, '2020');
         const siteData2024 = this.getSiteData(this.currentSite, '2024');
         
-        if (!siteData2020 || !siteData2024) return;
+        if (!siteData2020 || !siteData2024) {
+            document.getElementById('narrativeContent').innerHTML = `
+                <p class="narrative-text">
+                    Data for <strong>${this.currentSite}</strong> is incomplete. Please ensure all year data is available for this site.
+                </p>
+            `;
+            return;
+        }
         
         // Calculate key statistics
         const totalArea2020 = siteData2020.Total_Area_sq_km || 0;
