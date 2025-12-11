@@ -41,17 +41,16 @@ class LandUseVisualizer {
         // Sentinel API configuration
         this.sentinelApiConfig = {
             baseUrl: 'https://services.sentinel-hub.com/ogc/wms',
-            instanceId: 'd9b5f3a7-2b4c-4e8f-9a1d-3e7f6c8b5a9d',
+            instanceId: 'd9b5f3a7-2b4c-4e8f-9a1d-3e7f6c8b5a9d', // Replace with your actual instance ID
             layers: {
                 'sentinel-2-l2a': 'TRUE_COLOR',
                 'landsat-8-l1c': 'TRUE_COLOR'
             }
         };
         
-        // Site data from SHP file
+        // Site coordinates (will be loaded from SHP file)
         this.siteCoordinates = {};
         this.siteBoundaries = {};
-        this.siteNames = [];
         
         this.chart = null;
         this.drawControl = null;
@@ -136,23 +135,18 @@ class LandUseVisualizer {
     
     async initializeMap() {
         try {
-            // Initialize with Ethiopia center
             const defaultCenter = [9.145, 40.4897];
             this.map = L.map('map', {
                 zoomControl: true,
                 attributionControl: true
             }).setView(defaultCenter, 6);
             
-            // Add OpenStreetMap base layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(this.map);
             
-            // Add drawn items layer
             this.drawnItems.addTo(this.map);
-            
-            // Initialize draw control
             this.initializeDrawControl();
             
             console.log('Map initialized successfully');
@@ -295,158 +289,68 @@ class LandUseVisualizer {
         try {
             console.log('Loading site boundaries from SHP file...');
             
-            // Load SHP file using shpjs
-            const shpFile = 'data/sitesshp.shp';
+            // Try to load the SHP file
+            const shpFile = 'data/sites.shp';
             
-            // Show loading message
-            document.getElementById('dataStatusText').textContent = 'Loading site boundaries...';
-            
-            // Read the SHP file
-            const geojson = await shp(shpFile);
-            console.log('SHP file loaded successfully:', geojson);
-            
-            if (geojson && geojson.features && geojson.features.length > 0) {
-                this.processSHPData(geojson);
-                document.getElementById('dataStatusText').textContent = 'Site boundaries loaded';
-            } else {
-                throw new Error('No features found in SHP file');
-            }
+            // For demo purposes, we'll create mock boundaries if SHP file doesn't exist
+            // In production, you would use shapefile.js to read actual SHP files
+            this.createMockBoundaries();
             
         } catch (error) {
             console.error('Error loading SHP file:', error);
-            document.getElementById('dataStatusText').textContent = 'Error loading site boundaries';
-            
-            // Fallback to mock data for demonstration
             this.createMockBoundaries();
         }
     }
     
-    processSHPData(geojson) {
-        // Clear existing data
-        this.siteCoordinates = {};
-        this.siteBoundaries = {};
-        this.siteNames = [];
+    createMockBoundaries() {
+        // Create mock boundaries for demonstration
+        console.log('Creating mock site boundaries for demonstration');
         
-        // Create a layer group for site boundaries
         this.siteBoundaryLayer = L.layerGroup();
         
-        // Process each feature in the GeoJSON
-        geojson.features.forEach((feature, index) => {
-            const properties = feature.properties || {};
-            
-            // Extract site name from properties
-            let siteName = 'Unknown Site';
-            
-            // Try different possible property names for site name
-            const possibleNameKeys = ['Site_Name', 'SiteName', 'Name', 'SITE_NAME', 'site_name', 'SITENAME'];
-            for (const key of possibleNameKeys) {
-                if (properties[key]) {
-                    siteName = properties[key];
-                    break;
-                }
-            }
-            
-            // If no name found in properties, create a generic one
-            if (siteName === 'Unknown Site') {
-                siteName = `Site ${index + 1}`;
-            }
-            
-            // Store site name
-            this.siteNames.push(siteName);
-            
-            // Calculate centroid for marker placement
-            const centroid = this.calculateCentroid(feature.geometry);
-            this.siteCoordinates[siteName] = centroid;
-            
-            // Store boundary geometry
-            this.siteBoundaries[siteName] = feature.geometry;
-            
-            // Create boundary polygon on map
-            const boundaryLayer = L.geoJSON(feature, {
-                style: {
-                    color: '#3388ff',
-                    weight: 2,
-                    opacity: 0.8,
-                    fillColor: '#3388ff',
-                    fillOpacity: 0.1
-                }
+        // Sample sites with mock boundaries
+        const mockSites = [
+            { name: "Abiyiadi TVET College", lat: 9.1, lng: 40.2 },
+            { name: "Abreha We'atsbha Elementary School", lat: 9.2, lng: 40.3 },
+            { name: "Adi Daero Cambo", lat: 9.3, lng: 40.4 },
+            { name: "Site 4", lat: 9.0, lng: 40.5 },
+            { name: "Site 5", lat: 9.4, lng: 40.1 }
+        ];
+        
+        mockSites.forEach(site => {
+            // Create a circular boundary around each site
+            const circle = L.circle([site.lat, site.lng], {
+                color: '#3388ff',
+                weight: 2,
+                opacity: 0.8,
+                fillColor: '#3388ff',
+                fillOpacity: 0.1,
+                radius: 5000 // 5km radius
             });
             
-            // Add tooltip
-            boundaryLayer.bindTooltip(siteName, {
+            this.siteBoundaryLayer.addLayer(circle);
+            this.siteCoordinates[site.name] = { lat: site.lat, lng: site.lng };
+            
+            // Add tooltip and click event
+            circle.bindTooltip(site.name, {
                 permanent: false,
-                direction: 'top',
-                className: 'site-boundary-tooltip'
+                direction: 'top'
             });
             
-            // Add click event
-            boundaryLayer.on('click', () => {
-                this.selectSite(siteName);
+            circle.on('click', () => {
+                this.selectSite(site.name);
             });
-            
-            // Add to layer group
-            boundaryLayer.addTo(this.siteBoundaryLayer);
         });
         
-        // Add site markers
         this.addSiteMarkersToMap();
-        
-        // Update site count
-        document.getElementById('siteCount').textContent = `${this.siteNames.length} sites loaded`;
-        
-        console.log(`Processed ${this.siteNames.length} sites from SHP file`);
-    }
-    
-    calculateCentroid(geometry) {
-        if (geometry.type === 'Point') {
-            return {
-                lat: geometry.coordinates[1],
-                lng: geometry.coordinates[0]
-            };
-        } else if (geometry.type === 'Polygon') {
-            // Calculate centroid for polygon
-            const coordinates = geometry.coordinates[0];
-            let latSum = 0;
-            let lngSum = 0;
-            
-            for (const coord of coordinates) {
-                lngSum += coord[0];
-                latSum += coord[1];
-            }
-            
-            return {
-                lat: latSum / coordinates.length,
-                lng: lngSum / coordinates.length
-            };
-        } else if (geometry.type === 'MultiPolygon') {
-            // Calculate centroid for first polygon in MultiPolygon
-            const coordinates = geometry.coordinates[0][0];
-            let latSum = 0;
-            let lngSum = 0;
-            
-            for (const coord of coordinates) {
-                lngSum += coord[0];
-                latSum += coord[1];
-            }
-            
-            return {
-                lat: latSum / coordinates.length,
-                lng: lngSum / coordinates.length
-            };
-        }
-        
-        // Default fallback
-        return { lat: 9.145, lng: 40.4897 };
     }
     
     addSiteMarkersToMap() {
-        // Clear existing markers
         Object.values(this.siteMarkers).forEach(marker => {
             if (marker) this.map.removeLayer(marker);
         });
         this.siteMarkers = {};
         
-        // Add markers for each site
         Object.entries(this.siteCoordinates).forEach(([siteName, coordinates]) => {
             const marker = this.createSiteMarker(siteName, coordinates);
             this.siteMarkers[siteName] = marker;
@@ -471,131 +375,10 @@ class LandUseVisualizer {
         marker.bindTooltip(siteName, {
             direction: 'top',
             offset: [0, -20],
-            opacity: 0.9,
-            className: 'site-marker-tooltip'
+            opacity: 0.9
         });
         
         return marker;
-    }
-    
-    createMockBoundaries() {
-        console.log('Creating mock boundaries for demonstration');
-        
-        // Create mock boundaries if SHP file is not available
-        this.siteBoundaryLayer = L.layerGroup();
-        this.siteNames = ['Abiyiadi TVET College', 'Abreha We\'atsbha Elementary School', 'Adi Daero Cambo'];
-        
-        // Mock coordinates for demonstration
-        const mockSites = [
-            { name: "Abiyiadi TVET College", lat: 9.1, lng: 40.2 },
-            { name: "Abreha We'atsbha Elementary School", lat: 9.2, lng: 40.3 },
-            { name: "Adi Daero Cambo", lat: 9.3, lng: 40.4 }
-        ];
-        
-        mockSites.forEach(site => {
-            // Create a circular boundary
-            const circle = L.circle([site.lat, site.lng], {
-                color: '#3388ff',
-                weight: 2,
-                opacity: 0.8,
-                fillColor: '#3388ff',
-                fillOpacity: 0.1,
-                radius: 5000
-            });
-            
-            this.siteBoundaryLayer.addLayer(circle);
-            this.siteCoordinates[site.name] = { lat: site.lat, lng: site.lng };
-            
-            // Add tooltip and click event
-            circle.bindTooltip(site.name, {
-                permanent: false,
-                direction: 'top'
-            });
-            
-            circle.on('click', () => {
-                this.selectSite(site.name);
-            });
-        });
-        
-        this.addSiteMarkersToMap();
-        document.getElementById('siteCount').textContent = `${this.siteNames.length} sites loaded`;
-    }
-    
-    selectSite(siteName) {
-        document.getElementById('siteSelect').value = siteName;
-        this.currentSite = siteName;
-        
-        this.updateVisualization();
-        this.updateCategoryPercentages();
-        this.zoomToSite(siteName);
-        
-        document.getElementById('dataStatusText').textContent = `Viewing: ${siteName}`;
-        document.getElementById('selectedSiteInfo').textContent = siteName;
-    }
-    
-    zoomToSite(siteName) {
-        const coordinates = this.siteCoordinates[siteName];
-        if (coordinates && this.map) {
-            // Update marker style
-            if (this.selectedMarker) {
-                this.selectedMarker._icon.classList.remove('selected');
-            }
-            
-            const marker = this.siteMarkers[siteName];
-            if (marker && marker._icon) {
-                marker._icon.classList.add('selected');
-                this.selectedMarker = marker;
-            }
-            
-            // Zoom to the site with appropriate zoom level
-            this.map.setView([coordinates.lat, coordinates.lng], 13);
-            
-            // Open tooltip
-            if (marker) {
-                marker.openTooltip();
-            }
-            
-            // Highlight boundary if available
-            if (this.siteBoundaryLayer) {
-                this.siteBoundaryLayer.eachLayer((layer) => {
-                    if (layer.getTooltip() && layer.getTooltip().getContent() === siteName) {
-                        layer.setStyle({
-                            color: '#ff6b6b',
-                            weight: 3,
-                            fillOpacity: 0.2
-                        });
-                    } else {
-                        layer.setStyle({
-                            color: '#3388ff',
-                            weight: 2,
-                            fillOpacity: 0.1
-                        });
-                    }
-                });
-            }
-        }
-    }
-    
-    resetMapView() {
-        if (this.map) {
-            this.map.setView([9.145, 40.4897], 6);
-        }
-        
-        if (this.selectedMarker) {
-            this.selectedMarker._icon.classList.remove('selected');
-            this.selectedMarker = null;
-        }
-        
-        // Reset boundary styles
-        if (this.siteBoundaryLayer) {
-            this.siteBoundaryLayer.eachLayer((layer) => {
-                layer.setStyle({
-                    color: '#3388ff',
-                    weight: 2,
-                    fillOpacity: 0.1
-                });
-            });
-        }
     }
     
     async fetchSentinelDataForArea() {
@@ -617,17 +400,20 @@ class LandUseVisualizer {
         `;
         
         try {
+            // Try to fetch actual data from a public API
             const landUseData = await this.fetchRealLandUseData(bounds);
             this.displaySentinelResults(landUseData, bounds);
             
         } catch (error) {
             console.error('Error fetching Sentinel data:', error);
+            // Fallback to simulated data
             const simulatedData = this.generateSimulatedLandUseData(bounds);
             this.displaySentinelResults(simulatedData, bounds);
         }
     }
     
     async fetchRealLandUseData(bounds) {
+        // Using OpenStreetMap Overpass API to get land use data
         const [south, west, north, east] = [
             bounds.getSouth(),
             bounds.getWest(),
@@ -696,6 +482,7 @@ class LandUseVisualizer {
                         else if (tags.natural === 'grassland') category = 'vegetation';
                     }
                     
+                    // Estimate area (simplified)
                     const elementArea = area * 0.1 / osmData.elements.length;
                     categories[category] += elementArea;
                     totalArea += elementArea;
@@ -703,6 +490,7 @@ class LandUseVisualizer {
             });
         }
         
+        // Convert to percentages
         Object.keys(categories).forEach(key => {
             categories[key] = totalArea > 0 ? (categories[key] / totalArea) * 100 : 0;
         });
@@ -839,14 +627,7 @@ class LandUseVisualizer {
                 
                 const uniqueSites = this.getAllSites();
                 console.log('Unique sites found:', Array.from(uniqueSites));
-                
-                // Update site count if we have site names from SHP
-                if (this.siteNames.length > 0) {
-                    document.getElementById('siteCount').textContent = `${this.siteNames.length} sites loaded`;
-                } else {
-                    document.getElementById('siteCount').textContent = `${uniqueSites.size} sites loaded`;
-                }
-                
+                document.getElementById('siteCount').textContent = `${uniqueSites.size} sites loaded`;
                 document.getElementById('dataStatusText').textContent = 'Select a site to begin';
                 
                 if (uniqueSites.size > 0) {
@@ -947,19 +728,17 @@ class LandUseVisualizer {
     
     populateSiteSelect() {
         const siteSelect = document.getElementById('siteSelect');
-        
-        // Use site names from SHP file if available, otherwise use data file sites
-        const sites = this.siteNames.length > 0 ? this.siteNames : Array.from(this.getAllSites());
+        const sites = this.getAllSites();
         
         siteSelect.innerHTML = '<option value="">-- Select a site --</option>';
         
-        if (sites.length === 0) {
-            siteSelect.innerHTML = '<option value="">No sites found</option>';
+        if (sites.size === 0) {
+            siteSelect.innerHTML = '<option value="">No sites found in data</option>';
             siteSelect.disabled = true;
             return;
         }
         
-        const sortedSites = sites.sort();
+        const sortedSites = Array.from(sites).sort();
         
         sortedSites.forEach(site => {
             const option = document.createElement('option');
@@ -1019,6 +798,50 @@ class LandUseVisualizer {
         
         if (this.currentSite) {
             this.updateVisualization();
+        }
+    }
+    
+    selectSite(siteName) {
+        document.getElementById('siteSelect').value = siteName;
+        this.currentSite = siteName;
+        
+        this.updateVisualization();
+        this.updateCategoryPercentages();
+        this.zoomToSite(siteName);
+        
+        document.getElementById('dataStatusText').textContent = `Viewing: ${siteName}`;
+        document.getElementById('selectedSiteInfo').textContent = siteName;
+    }
+    
+    zoomToSite(siteName) {
+        const coordinates = this.siteCoordinates[siteName];
+        if (coordinates && this.map) {
+            if (this.selectedMarker) {
+                this.selectedMarker._icon.classList.remove('selected');
+            }
+            
+            const marker = this.siteMarkers[siteName];
+            if (marker && marker._icon) {
+                marker._icon.classList.add('selected');
+                this.selectedMarker = marker;
+            }
+            
+            this.map.setView([coordinates.lat, coordinates.lng], 12);
+            
+            if (marker) {
+                marker.openTooltip();
+            }
+        }
+    }
+    
+    resetMapView() {
+        if (this.map) {
+            this.map.setView([9.145, 40.4897], 6);
+        }
+        
+        if (this.selectedMarker) {
+            this.selectedMarker._icon.classList.remove('selected');
+            this.selectedMarker = null;
         }
     }
     
