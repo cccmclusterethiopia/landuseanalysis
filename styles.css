@@ -637,3 +637,107 @@ footer i {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
+
+/* Add these styles to your existing CSS */
+
+/* Top Site Selection */
+.site-selection-top {
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.site-selection-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.site-selection-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.site-selection-header i {
+    font-size: 1.5rem;
+}
+
+.site-selection-header h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.site-selection-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.site-select-top {
+    flex: 1;
+    max-width: 500px;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 1.1rem;
+    background: white;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.site-select-top:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+}
+
+.site-select-top:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.site-info {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #4a5568;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.separator {
+    color: #a0aec0;
+}
+
+/* Remove site selection from control panel since it's now at top */
+.control-panel .form-group:first-child {
+    display: none;
+}
+
+/* Chart header adjustments */
+.chart-info .info-item:nth-child(2) i {
+    color: #e74c3c;
+}
+
+/* Zero value handling */
+.no-data-message {
+    text-align: center;
+    padding: 3rem;
+    color: #718096;
+    font-size: 1.1rem;
+}
+
+.no-data-message i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #a0aec0;
+}
+
+/* Hide zero-value bars */
+.chart-bar-zero {
+    opacity: 0.3;
+}
