@@ -28,136 +28,208 @@ class LandUseVisualizer {
             rangeland: '#8e44ad'
         };
         this.chart = null;
+        this.debugMode = true;
         
         this.init();
     }
     
-    async init() {
+    init() {
         this.showLoadingState();
-        await this.loadData();
         this.setupEventListeners();
         this.populateCategoryCards();
-        this.populateSiteSelect();
-        
-        if (this.data['2020'] && this.data['2020'].length > 0) {
-            this.currentSite = this.data['2020'][0].Site_Name;
-            this.updateVisualization();
-            this.updateNarrative();
-            this.updateCategoryPercentages();
-        }
+        this.loadData();
     }
     
     showLoadingState() {
-        // Show loading indicators
         document.getElementById('loadingChart').style.display = 'flex';
         document.getElementById('mainChart').style.display = 'none';
+        this.updateStatus('2020', 'loading');
+        this.updateStatus('2022', 'loading');
+        this.updateStatus('2024', 'loading');
     }
     
     hideLoadingState() {
-        // Hide loading indicators
         document.getElementById('loadingChart').style.display = 'none';
         document.getElementById('mainChart').style.display = 'block';
     }
     
-    async loadData() {
-        try {
-            const years = ['2020', '2022', '2024'];
-            
-            for (const year of years) {
-                try {
-                    const response = await fetch(`data/${year}-Result-exc.json`);
-                    if (!response.ok) {
-                        throw new Error(`Failed to load ${year} data`);
-                    }
-                    this.data[year] = await response.json();
-                    console.log(`Loaded ${year} data:`, this.data[year]);
-                } catch (error) {
-                    console.error(`Error loading ${year} data:`, error);
-                    this.data[year] = [];
-                }
-            }
-            
-            // Clean and standardize the data
-            this.cleanData();
-            
-        } catch (error) {
-            console.error('Error loading data:', error);
-            this.showErrorMessage('Failed to load data. Please check if JSON files are in the data folder.');
+    updateStatus(year, status, message = '') {
+        const element = document.getElementById(`status${year}`);
+        if (element) {
+            element.textContent = message || this.getStatusText(status);
+            element.className = `status-value ${status}`;
         }
     }
     
-    cleanData() {
-        // Ensure all data has consistent field names
-        Object.keys(this.data).forEach(year => {
-            if (this.data[year]) {
-                this.data[year] = this.data[year].map(item => {
-                    const cleaned = {};
-                    
-                    // Handle different column name formats
-                    const columnMapping = {
-                        'Site_Name': ['Site_Name', 'Site Name', 'site_name'],
-                        'Total_Area_sq_km': ['Total_Area_sq_km', 'Total_Area_sq km', 'Total Area (sq km)', 'Total_Area'],
-                        'Water_Percent': ['Water_Percent', 'Water Percent', 'water_percent'],
-                        'Trees_Percent': ['Trees_Percent', 'Trees Percent', 'trees_percent'],
-                        'FloodVegetation_Percent': ['FloodVegetation_Percent', 'FloodVegetation Percent', 'Flood_Vegetation_Percent'],
-                        'Crops_Percent': ['Crops_Percent', 'Crops Percent', 'crops_percent'],
-                        'BuiltArea_Percent': ['BuiltArea_Percent', 'BuiltArea Percent', 'Built_Area_Percent'],
-                        'BareGround_Percent': ['BareGround_Percent', 'BareGround Percent', 'Bare_Ground_Percent'],
-                        'Rangeland_Percent': ['Rangeland_Percent', 'Rangeland Percent', 'rangeland_percent']
-                    };
-                    
-                    // Map columns
-                    Object.keys(columnMapping).forEach(standardKey => {
-                        const possibleKeys = columnMapping[standardKey];
-                        let foundValue = null;
-                        
-                        for (const key of possibleKeys) {
-                            if (item[key] !== undefined) {
-                                foundValue = item[key];
-                                break;
-                            }
-                        }
-                        
-                        cleaned[standardKey] = foundValue !== null ? foundValue : 0;
-                    });
-                    
-                    // Handle 2024 Class_11 mapping to Rangeland
-                    if (year === '2024') {
-                        if (item['Class_11_Percent'] !== undefined) {
-                            cleaned['Rangeland_Percent'] = item['Class_11_Percent'];
-                        }
-                    }
-                    
-                    return cleaned;
-                });
+    getStatusText(status) {
+        const statusMap = {
+            'loading': 'Loading...',
+            'loaded': '✓ Loaded',
+            'error': '✗ Error',
+            'not-found': 'Not found'
+        };
+        return statusMap[status] || status;
+    }
+    
+    setupEventListeners() {
+        document.getElementById('siteSelect').addEventListener('change', (e) => {
+            this.currentSite = e.target.value;
+            if (this.currentSite) {
+                this.updateVisualization();
+                this.updateCategoryPercentages();
             }
+        });
+        
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            this.loadData();
         });
     }
     
-    showErrorMessage(message) {
-        const narrativeContent = document.getElementById('narrativeContent');
-        narrativeContent.innerHTML = `
-            <p class="narrative-text" style="color: #e74c3c;">
-                <i class="fas fa-exclamation-triangle"></i> ${message}
-            </p>
-            <div class="narrative-stats">
-                <p>Please ensure your JSON files are in the <code>data/</code> folder with these exact names:</p>
-                <ul style="margin-top: 10px; padding-left: 20px;">
-                    <li><code>2020-Result-exc.json</code></li>
-                    <li><code>2022-Result-exc.json</code></li>
-                    <li><code>2024-Result-exc.json</code></li>
-                </ul>
-            </div>
-        `;
+    async loadData() {
+        console.log('Starting data load...');
+        
+        // Reset states
+        this.showLoadingState();
+        document.getElementById('retryBtn').style.display = 'none';
+        document.getElementById('loadingMessage').textContent = 'Loading data from repository...';
+        
+        try {
+            const years = ['2020', '2022', '2024'];
+            let allLoaded = true;
+            
+            for (const year of years) {
+                try {
+                    console.log(`Attempting to load ${year} data...`);
+                    
+                    // Try different possible paths
+                    const paths = [
+                        `data/${year}-Result-exc.json`,
+                        `data/${year}-Result-exc.json?t=${Date.now()}`,
+                        `/${year}-Result-exc.json`,
+                        `${year}-Result-exc.json`
+                    ];
+                    
+                    let response = null;
+                    let lastError = null;
+                    
+                    for (const path of paths) {
+                        try {
+                            console.log(`Trying path: ${path}`);
+                            response = await fetch(path);
+                            if (response.ok) break;
+                        } catch (err) {
+                            lastError = err;
+                            console.log(`Path ${path} failed:`, err);
+                        }
+                    }
+                    
+                    if (response && response.ok) {
+                        const jsonData = await response.json();
+                        console.log(`${year} data loaded successfully:`, jsonData);
+                        
+                        if (Array.isArray(jsonData) && jsonData.length > 0) {
+                            this.data[year] = this.cleanData(jsonData, year);
+                            this.updateStatus(year, 'loaded', `✓ Loaded (${jsonData.length} sites)`);
+                            
+                            // Log sample data for debugging
+                            if (this.debugMode && jsonData[0]) {
+                                console.log(`${year} sample data:`, jsonData[0]);
+                                console.log(`${year} available keys:`, Object.keys(jsonData[0]));
+                            }
+                        } else {
+                            this.updateStatus(year, 'error', '✗ Empty data');
+                            allLoaded = false;
+                        }
+                    } else {
+                        console.error(`Failed to load ${year} data from all paths`);
+                        this.updateStatus(year, 'error', '✗ File not found');
+                        allLoaded = false;
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error loading ${year} data:`, error);
+                    this.updateStatus(year, 'error', `✗ ${error.message}`);
+                    allLoaded = false;
+                }
+            }
+            
+            if (allLoaded && this.data['2020'] && this.data['2020'].length > 0) {
+                // Success - populate UI
+                this.populateSiteSelect();
+                document.getElementById('loadingMessage').textContent = 'Data loaded successfully!';
+                
+                // Auto-select first site
+                if (this.data['2020'].length > 0) {
+                    const firstSite = this.data['2020'][0].Site_Name;
+                    document.getElementById('siteSelect').value = firstSite;
+                    this.currentSite = firstSite;
+                    this.updateVisualization();
+                    this.updateCategoryPercentages();
+                }
+                
+                // Update total sites count
+                const uniqueSites = this.getAllSites();
+                document.getElementById('totalSites').textContent = uniqueSites.size;
+                
+            } else {
+                // Some files failed to load
+                document.getElementById('loadingMessage').textContent = 'Failed to load some data files. Check console for details.';
+                document.getElementById('retryBtn').style.display = 'inline-flex';
+                this.showDataHelp();
+            }
+            
+        } catch (error) {
+            console.error('Critical error loading data:', error);
+            document.getElementById('loadingMessage').textContent = 'Critical error loading data. Check console.';
+            document.getElementById('retryBtn').style.display = 'inline-flex';
+            this.showDataHelp();
+        }
     }
     
-    populateSiteSelect() {
-        const siteSelect = document.getElementById('siteSelect');
-        siteSelect.innerHTML = '<option value="">-- Select a site --</option>';
+    cleanData(data, year) {
+        if (!Array.isArray(data)) return [];
         
-        // Get unique site names from all years
+        return data.map(item => {
+            const cleaned = {};
+            
+            // Helper function to find value by possible key names
+            const findValue = (possibleKeys) => {
+                for (const key of possibleKeys) {
+                    if (item[key] !== undefined) {
+                        const value = item[key];
+                        // Convert to number if possible
+                        return typeof value === 'string' ? parseFloat(value) || 0 : value || 0;
+                    }
+                }
+                return 0;
+            };
+            
+            // Map all possible column name variations
+            cleaned.Site_Name = findValue(['Site_Name', 'Site Name', 'site_name', 'SiteName']);
+            cleaned.Total_Area_sq_km = findValue(['Total_Area_sq_km', 'Total_Area_sq km', 'Total Area (sq km)', 'Total_Area', 'total_area']);
+            
+            cleaned.Water_Percent = findValue(['Water_Percent', 'Water Percent', 'water_percent', 'Water%']);
+            cleaned.Trees_Percent = findValue(['Trees_Percent', 'Trees Percent', 'trees_percent', 'Trees%']);
+            cleaned.FloodVegetation_Percent = findValue(['FloodVegetation_Percent', 'FloodVegetation Percent', 'Flood_Vegetation_Percent', 'FloodVegetation%']);
+            cleaned.Crops_Percent = findValue(['Crops_Percent', 'Crops Percent', 'crops_percent', 'Crops%']);
+            cleaned.BuiltArea_Percent = findValue(['BuiltArea_Percent', 'BuiltArea Percent', 'Built_Area_Percent', 'BuiltArea%']);
+            cleaned.BareGround_Percent = findValue(['BareGround_Percent', 'BareGround Percent', 'Bare_Ground_Percent', 'BareGround%']);
+            cleaned.Rangeland_Percent = findValue(['Rangeland_Percent', 'Rangeland Percent', 'rangeland_percent', 'Rangeland%']);
+            
+            // Special handling for 2024 Class_11
+            if (year === '2024') {
+                const class11Percent = findValue(['Class_11_Percent', 'Class11_Percent', 'Class 11 Percent']);
+                if (class11Percent > 0) {
+                    cleaned.Rangeland_Percent = class11Percent;
+                }
+            }
+            
+            return cleaned;
+        });
+    }
+    
+    getAllSites() {
         const sites = new Set();
-        
         Object.keys(this.data).forEach(year => {
             if (this.data[year]) {
                 this.data[year].forEach(item => {
@@ -167,6 +239,28 @@ class LandUseVisualizer {
                 });
             }
         });
+        return sites;
+    }
+    
+    showDataHelp() {
+        const debugInfo = `
+            <strong>Debug Information:</strong><br>
+            - Looking for JSON files in: data/ folder<br>
+            - Expected files: 2020-Result-exc.json, 2022-Result-exc.json, 2024-Result-exc.json<br>
+            - Check browser console for detailed errors<br>
+            - Make sure JSON files are valid (use <a href="https://jsonlint.com/" target="_blank">JSONLint</a> to validate)<br>
+            - GitHub Pages URL: https://[username].github.io/[repo-name]/<br>
+            - Current URL: ${window.location.href}
+        `;
+        document.getElementById('debugInfo').innerHTML = debugInfo;
+        document.getElementById('debugInfo').style.display = 'block';
+    }
+    
+    populateSiteSelect() {
+        const siteSelect = document.getElementById('siteSelect');
+        const sites = this.getAllSites();
+        
+        siteSelect.innerHTML = '<option value="">-- Select a site --</option>';
         
         if (sites.size === 0) {
             siteSelect.innerHTML = '<option value="">No sites found in data</option>';
@@ -182,13 +276,6 @@ class LandUseVisualizer {
         });
         
         siteSelect.disabled = false;
-        
-        // Select first site by default
-        if (sites.size > 0) {
-            const firstSite = Array.from(sites)[0];
-            siteSelect.value = firstSite;
-            this.currentSite = firstSite;
-        }
     }
     
     populateCategoryCards() {
@@ -228,17 +315,6 @@ class LandUseVisualizer {
         });
     }
     
-    setupEventListeners() {
-        document.getElementById('siteSelect').addEventListener('change', (e) => {
-            this.currentSite = e.target.value;
-            if (this.currentSite) {
-                this.updateVisualization();
-                this.updateNarrative();
-                this.updateCategoryPercentages();
-            }
-        });
-    }
-    
     toggleCategory(categoryId, card) {
         if (this.selectedCategories.has(categoryId)) {
             this.selectedCategories.delete(categoryId);
@@ -250,7 +326,6 @@ class LandUseVisualizer {
         
         if (this.currentSite) {
             this.updateVisualization();
-            this.updateNarrative();
         }
     }
     
@@ -506,121 +581,14 @@ class LandUseVisualizer {
             timeline.appendChild(div);
         });
     }
-    
-    updateNarrative() {
-        if (!this.currentSite) {
-            document.getElementById('narrativeContent').innerHTML = `
-                <p class="narrative-text">
-                    Please select a site from the dropdown to view detailed analysis.
-                </p>
-            `;
-            return;
-        }
-        
-        const siteData2020 = this.getSiteData(this.currentSite, '2020');
-        const siteData2024 = this.getSiteData(this.currentSite, '2024');
-        
-        if (!siteData2020 || !siteData2024) {
-            document.getElementById('narrativeContent').innerHTML = `
-                <p class="narrative-text">
-                    Complete data not available for <strong>${this.currentSite}</strong>. Some years may be missing.
-                </p>
-            `;
-            return;
-        }
-        
-        // Calculate key statistics
-        const totalArea2020 = siteData2020.Total_Area_sq_km || 0;
-        const totalArea2024 = siteData2024.Total_Area_sq_km || 0;
-        const areaChange = ((totalArea2024 - totalArea2020) / totalArea2020 * 100).toFixed(1);
-        
-        // Find dominant categories
-        const categories = {
-            'Water_Percent': 'Water',
-            'Trees_Percent': 'Trees',
-            'Crops_Percent': 'Crops',
-            'BuiltArea_Percent': 'Built Area',
-            'Rangeland_Percent': 'Rangeland'
-        };
-        
-        let max2020 = 0;
-        let dominant2020 = '';
-        let max2024 = 0;
-        let dominant2024 = '';
-        
-        Object.entries(categories).forEach(([key, label]) => {
-            const percent2020 = siteData2020[key] || 0;
-            const percent2024 = siteData2024[key] || 0;
-            
-            if (percent2020 > max2020) {
-                max2020 = percent2020;
-                dominant2020 = label;
-            }
-            
-            if (percent2024 > max2024) {
-                max2024 = percent2024;
-                dominant2024 = label;
-            }
-        });
-        
-        // Calculate total selected percentage
-        let totalSelectedPercent = 0;
-        const percentKeys = {
-            water: 'Water_Percent',
-            trees: 'Trees_Percent',
-            floodVegetation: 'FloodVegetation_Percent',
-            crops: 'Crops_Percent',
-            builtArea: 'BuiltArea_Percent',
-            bareGround: 'BareGround_Percent',
-            rangeland: 'Rangeland_Percent'
-        };
-        
-        Array.from(this.selectedCategories).forEach(categoryId => {
-            totalSelectedPercent += siteData2024[percentKeys[categoryId]] || 0;
-        });
-        
-        const narrativeContent = `
-            <p class="narrative-text">
-                Analysis of <strong>${this.currentSite}</strong> reveals significant land use transformations between 2020 and 2024. 
-                The site covers ${totalArea2024.toFixed(1)} square kilometers, showing a ${areaChange >= 0 ? 'growth' : 'reduction'} 
-                of ${Math.abs(areaChange)}% in total monitored area.
-            </p>
-            
-            <div class="narrative-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Total Area (2024):</span>
-                    <span class="stat-value">${totalArea2024.toFixed(1)} sq km</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Area Change (2020-2024):</span>
-                    <span class="stat-value">${areaChange}%</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Dominant Use (2024):</span>
-                    <span class="stat-value">${dominant2024}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Selected Categories:</span>
-                    <span class="stat-value">${totalSelectedPercent.toFixed(1)}%</span>
-                </div>
-            </div>
-            
-            <div class="narrative-insights">
-                <h4><i class="fas fa-chart-line"></i> Trend Analysis</h4>
-                <ul class="insights-list">
-                    <li>${dominant2020} was the primary land use in 2020 (${max2020.toFixed(1)}%)</li>
-                    <li>${dominant2024} has emerged as dominant in 2024 (${max2024.toFixed(1)}%)</li>
-                    <li>${areaChange >= 0 ? 'Expansion' : 'Contraction'} of monitored area suggests ${areaChange >= 0 ? 'increased' : 'reduced'} development activity</li>
-                    <li>Selected categories represent ${totalSelectedPercent.toFixed(1)}% of total land use in 2024</li>
-                </ul>
-            </div>
-        `;
-        
-        document.getElementById('narrativeContent').innerHTML = narrativeContent;
-    }
 }
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    new LandUseVisualizer();
+    console.log('Initializing LandUseVisualizer...');
+    console.log('Current URL:', window.location.href);
+    console.log('GitHub Pages expected at: https://[username].github.io/[repo-name]/');
+    
+    const visualizer = new LandUseVisualizer();
+    window.landUseVisualizer = visualizer; // Expose for debugging
 });
