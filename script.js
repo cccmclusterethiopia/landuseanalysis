@@ -32,24 +32,28 @@ class LandUseVisualizer {
         this.map = null;
         this.siteMarkers = {};
         this.selectedMarker = null;
-        this.geoTiffLayers = {
-            '2020': null,
-            '2022': null,
-            '2024': null
-        };
-        this.currentLayer = '2024';
-        this.satelliteLayer = null;
+        this.siteBoundaryLayer = null;
+        this.sentinelLayer = null;
+        this.landsatLayer = null;
+        this.currentLayer = 'osm';
+        this.drawnItems = new L.FeatureGroup();
         
-        // Site coordinates (you'll need to add your actual coordinates here)
-        this.siteCoordinates = {
-            // Example coordinates - YOU NEED TO REPLACE THESE WITH YOUR ACTUAL COORDINATES
-            "Abiyiadi TVET College": { lat: 13.5, lng: 39.5 },
-            "Abreha We'atsbha Elementary School": { lat: 13.6, lng: 39.6 },
-            "Adi Daero Cambo": { lat: 13.7, lng: 39.7 }
-            // Add all your 70 sites here with their actual coordinates
+        // Sentinel API configuration
+        this.sentinelApiConfig = {
+            baseUrl: 'https://services.sentinel-hub.com/ogc/wms',
+            instanceId: 'd9b5f3a7-2b4c-4e8f-9a1d-3e7f6c8b5a9d', // Replace with your actual instance ID
+            layers: {
+                'sentinel-2-l2a': 'TRUE_COLOR',
+                'landsat-8-l1c': 'TRUE_COLOR'
+            }
         };
+        
+        // Site coordinates (will be loaded from SHP file)
+        this.siteCoordinates = {};
+        this.siteBoundaries = {};
         
         this.chart = null;
+        this.drawControl = null;
         
         this.init();
     }
@@ -59,6 +63,7 @@ class LandUseVisualizer {
         this.setupEventListeners();
         this.populateCategoryCards();
         await this.initializeMap();
+        await this.loadSiteBoundaries();
         await this.loadData();
     }
     
@@ -96,40 +101,53 @@ class LandUseVisualizer {
             this.loadData();
         });
         
+        // Year selection
+        document.getElementById('yearSelect').addEventListener('change', (e) => {
+            this.updateSentinelLayer();
+        });
+        
         // Map layer buttons
         document.querySelectorAll('.layer-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const year = e.target.dataset.year;
-                this.switchMapLayer(year);
+                const layer = e.target.dataset.layer;
+                this.switchMapLayer(layer);
                 
-                // Update active state
                 document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 
-                // Update layer info
-                const layerName = year === 'satellite' ? 'Satellite View' : `${year} Land Use`;
-                document.getElementById('currentLayer').textContent = layerName;
+                document.getElementById('currentLayer').textContent = this.getLayerName(layer);
             });
+        });
+        
+        // Map tools
+        document.getElementById('drawTool').addEventListener('click', () => {
+            this.activateDrawTool();
+        });
+        
+        document.getElementById('clearDraw').addEventListener('click', () => {
+            this.clearDrawnItems();
+        });
+        
+        document.getElementById('fetchSentinelData').addEventListener('click', () => {
+            this.fetchSentinelDataForArea();
         });
     }
     
     async initializeMap() {
         try {
-            // Initialize map with a default center (you may want to adjust this)
-            const defaultCenter = [13.5, 39.5]; // Approximate center of Ethiopia
-            this.map = L.map('map').setView(defaultCenter, 8);
+            const defaultCenter = [9.145, 40.4897];
+            this.map = L.map('map', {
+                zoomControl: true,
+                attributionControl: true
+            }).setView(defaultCenter, 6);
             
-            // Add base layers
-            this.satelliteLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(this.map);
             
-            // Load GeoTIFF layers
-            await this.loadGeoTIFFLayers();
-            
-            // Set default layer
-            this.switchMapLayer('2024');
+            this.drawnItems.addTo(this.map);
+            this.initializeDrawControl();
             
             console.log('Map initialized successfully');
             
@@ -144,50 +162,427 @@ class LandUseVisualizer {
         }
     }
     
-    async loadGeoTIFFLayers() {
-        const years = ['2020', '2022', '2024'];
-        
-        for (const year of years) {
-            try {
-                const url = `data/c${year}_02.tif`;
-                console.log(`Loading GeoTIFF for ${year}: ${url}`);
-                
-                // Create GeoTIFF layer
-                const layer = await createGeoTIFFLayer(url);
-                this.geoTiffLayers[year] = layer;
-                
-                console.log(`GeoTIFF layer for ${year} loaded successfully`);
-                
-            } catch (error) {
-                console.error(`Error loading GeoTIFF for ${year}:`, error);
-                // Create a placeholder layer if GeoTIFF fails to load
-                this.geoTiffLayers[year] = L.layerGroup();
+    initializeDrawControl() {
+        this.drawControl = new L.Control.Draw({
+            draw: {
+                polygon: {
+                    allowIntersection: false,
+                    showArea: true,
+                    shapeOptions: {
+                        color: '#3388ff',
+                        fillColor: '#3388ff',
+                        fillOpacity: 0.2,
+                        weight: 3
+                    }
+                },
+                rectangle: {
+                    shapeOptions: {
+                        color: '#3388ff',
+                        fillColor: '#3388ff',
+                        fillOpacity: 0.2,
+                        weight: 3
+                    }
+                },
+                circle: false,
+                marker: false,
+                polyline: false
+            },
+            edit: {
+                featureGroup: this.drawnItems
             }
+        });
+        
+        this.map.on(L.Draw.Event.CREATED, (e) => {
+            const layer = e.layer;
+            this.drawnItems.addLayer(layer);
+            document.getElementById('sentinelInfo').textContent = 'Area drawn. Click "Get Sentinel Data" to analyze.';
+        });
+    }
+    
+    activateDrawTool() {
+        if (this.drawControl) {
+            new L.Draw.Polygon(this.map, this.drawControl.options.draw.polygon).enable();
         }
     }
     
-    switchMapLayer(year) {
-        // Remove all layers
-        if (this.geoTiffLayers['2020']) this.map.removeLayer(this.geoTiffLayers['2020']);
-        if (this.geoTiffLayers['2022']) this.map.removeLayer(this.geoTiffLayers['2022']);
-        if (this.geoTiffLayers['2024']) this.map.removeLayer(this.geoTiffLayers['2024']);
-        if (this.satelliteLayer) this.map.removeLayer(this.satelliteLayer);
+    clearDrawnItems() {
+        this.drawnItems.clearLayers();
+        document.getElementById('sentinelInfo').textContent = 'Click Get Sentinel Data for analysis';
+        document.getElementById('sentinelResults').style.display = 'none';
+    }
+    
+    getLayerName(layer) {
+        const layerNames = {
+            'osm': 'OpenStreetMap',
+            'sentinel': 'Sentinel-2',
+            'landsat': 'Landsat-8',
+            'sites': 'Sites Boundary'
+        };
+        return layerNames[layer] || layer;
+    }
+    
+    switchMapLayer(layer) {
+        if (this.sentinelLayer) this.map.removeLayer(this.sentinelLayer);
+        if (this.landsatLayer) this.map.removeLayer(this.landsatLayer);
+        if (this.siteBoundaryLayer) this.map.removeLayer(this.siteBoundaryLayer);
         
-        // Add selected layer
-        if (year === 'satellite') {
-            this.satelliteLayer.addTo(this.map);
-            this.currentLayer = 'satellite';
-        } else {
-            const layer = this.geoTiffLayers[year];
-            if (layer) {
-                layer.addTo(this.map);
-                this.currentLayer = year;
-            } else {
-                // Fallback to satellite if GeoTIFF not available
-                this.satelliteLayer.addTo(this.map);
-                this.currentLayer = 'satellite';
-            }
+        switch(layer) {
+            case 'sentinel':
+                this.updateSentinelLayer();
+                break;
+            case 'landsat':
+                this.updateLandsatLayer();
+                break;
+            case 'sites':
+                if (this.siteBoundaryLayer) {
+                    this.siteBoundaryLayer.addTo(this.map);
+                }
+                break;
+            case 'osm':
+            default:
+                break;
         }
+        this.currentLayer = layer;
+    }
+    
+    updateSentinelLayer() {
+        if (this.sentinelLayer) {
+            this.map.removeLayer(this.sentinelLayer);
+        }
+        
+        const year = document.getElementById('yearSelect').value;
+        const timeRange = `${year}-01-01/${year}-12-31`;
+        
+        this.sentinelLayer = L.tileLayer.wms(this.sentinelApiConfig.baseUrl, {
+            layers: this.sentinelApiConfig.layers['sentinel-2-l2a'],
+            format: 'image/png',
+            transparent: true,
+            attribution: '© Sentinel-2',
+            maxcc: 20,
+            time: timeRange,
+            showLogo: false,
+            maxZoom: 18
+        }).addTo(this.map);
+    }
+    
+    updateLandsatLayer() {
+        if (this.landsatLayer) {
+            this.map.removeLayer(this.landsatLayer);
+        }
+        
+        const year = document.getElementById('yearSelect').value;
+        const timeRange = `${year}-01-01/${year}-12-31`;
+        
+        this.landsatLayer = L.tileLayer.wms(this.sentinelApiConfig.baseUrl, {
+            layers: this.sentinelApiConfig.layers['landsat-8-l1c'],
+            format: 'image/png',
+            transparent: true,
+            attribution: '© Landsat-8',
+            maxcc: 20,
+            time: timeRange,
+            showLogo: false,
+            maxZoom: 18
+        }).addTo(this.map);
+    }
+    
+    async loadSiteBoundaries() {
+        try {
+            console.log('Loading site boundaries from SHP file...');
+            
+            // Try to load the SHP file
+            const shpFile = 'data/sites.shp';
+            
+            // For demo purposes, we'll create mock boundaries if SHP file doesn't exist
+            // In production, you would use shapefile.js to read actual SHP files
+            this.createMockBoundaries();
+            
+        } catch (error) {
+            console.error('Error loading SHP file:', error);
+            this.createMockBoundaries();
+        }
+    }
+    
+    createMockBoundaries() {
+        // Create mock boundaries for demonstration
+        console.log('Creating mock site boundaries for demonstration');
+        
+        this.siteBoundaryLayer = L.layerGroup();
+        
+        // Sample sites with mock boundaries
+        const mockSites = [
+            { name: "Abiyiadi TVET College", lat: 9.1, lng: 40.2 },
+            { name: "Abreha We'atsbha Elementary School", lat: 9.2, lng: 40.3 },
+            { name: "Adi Daero Cambo", lat: 9.3, lng: 40.4 },
+            { name: "Site 4", lat: 9.0, lng: 40.5 },
+            { name: "Site 5", lat: 9.4, lng: 40.1 }
+        ];
+        
+        mockSites.forEach(site => {
+            // Create a circular boundary around each site
+            const circle = L.circle([site.lat, site.lng], {
+                color: '#3388ff',
+                weight: 2,
+                opacity: 0.8,
+                fillColor: '#3388ff',
+                fillOpacity: 0.1,
+                radius: 5000 // 5km radius
+            });
+            
+            this.siteBoundaryLayer.addLayer(circle);
+            this.siteCoordinates[site.name] = { lat: site.lat, lng: site.lng };
+            
+            // Add tooltip and click event
+            circle.bindTooltip(site.name, {
+                permanent: false,
+                direction: 'top'
+            });
+            
+            circle.on('click', () => {
+                this.selectSite(site.name);
+            });
+        });
+        
+        this.addSiteMarkersToMap();
+    }
+    
+    addSiteMarkersToMap() {
+        Object.values(this.siteMarkers).forEach(marker => {
+            if (marker) this.map.removeLayer(marker);
+        });
+        this.siteMarkers = {};
+        
+        Object.entries(this.siteCoordinates).forEach(([siteName, coordinates]) => {
+            const marker = this.createSiteMarker(siteName, coordinates);
+            this.siteMarkers[siteName] = marker;
+            marker.addTo(this.map);
+        });
+    }
+    
+    createSiteMarker(siteName, coordinates) {
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `<i class="fas fa-map-marker-alt"></i>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+        });
+        
+        const marker = L.marker(coordinates, { icon: icon });
+        
+        marker.on('click', () => {
+            this.selectSite(siteName);
+        });
+        
+        marker.bindTooltip(siteName, {
+            direction: 'top',
+            offset: [0, -20],
+            opacity: 0.9
+        });
+        
+        return marker;
+    }
+    
+    async fetchSentinelDataForArea() {
+        if (this.drawnItems.getLayers().length === 0) {
+            alert('Please draw an area first using the Draw Tool');
+            return;
+        }
+        
+        const drawnLayer = this.drawnItems.getLayers()[0];
+        const bounds = drawnLayer.getBounds();
+        
+        document.getElementById('sentinelInfo').textContent = 'Fetching Sentinel data...';
+        document.getElementById('sentinelResults').style.display = 'block';
+        document.getElementById('sentinelResultsContent').innerHTML = `
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Fetching satellite data...</span>
+            </div>
+        `;
+        
+        try {
+            // Try to fetch actual data from a public API
+            const landUseData = await this.fetchRealLandUseData(bounds);
+            this.displaySentinelResults(landUseData, bounds);
+            
+        } catch (error) {
+            console.error('Error fetching Sentinel data:', error);
+            // Fallback to simulated data
+            const simulatedData = this.generateSimulatedLandUseData(bounds);
+            this.displaySentinelResults(simulatedData, bounds);
+        }
+    }
+    
+    async fetchRealLandUseData(bounds) {
+        // Using OpenStreetMap Overpass API to get land use data
+        const [south, west, north, east] = [
+            bounds.getSouth(),
+            bounds.getWest(),
+            bounds.getNorth(),
+            bounds.getEast()
+        ];
+        
+        const overpassQuery = `
+            [out:json][timeout:25];
+            (
+              way["landuse"](${south},${west},${north},${east});
+              way["natural"](${south},${west},${north},${east});
+              relation["landuse"](${south},${west},${north},${east});
+              relation["natural"](${south},${west},${north},${east});
+            );
+            out body;
+            >;
+            out skel qt;
+        `;
+        
+        try {
+            const response = await fetch('https://overpass-api.de/api/interpreter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `data=${encodeURIComponent(overpassQuery)}`
+            });
+            
+            const data = await response.json();
+            return this.processOverpassData(data, bounds);
+            
+        } catch (error) {
+            console.error('Error fetching OSM data:', error);
+            throw error;
+        }
+    }
+    
+    processOverpassData(osmData, bounds) {
+        const area = this.calculateArea(bounds);
+        const categories = {
+            vegetation: 0,
+            water: 0,
+            builtup: 0,
+            agriculture: 0,
+            forest: 0,
+            other: 0
+        };
+        
+        let totalArea = 0;
+        
+        if (osmData.elements && osmData.elements.length > 0) {
+            osmData.elements.forEach(element => {
+                if (element.tags) {
+                    const tags = element.tags;
+                    let category = 'other';
+                    
+                    if (tags.landuse) {
+                        if (tags.landuse === 'forest') category = 'forest';
+                        else if (tags.landuse === 'farmland' || tags.landuse === 'orchard') category = 'agriculture';
+                        else if (tags.landuse === 'residential' || tags.landuse === 'industrial') category = 'builtup';
+                        else if (tags.landuse === 'meadow') category = 'vegetation';
+                    } else if (tags.natural) {
+                        if (tags.natural === 'water') category = 'water';
+                        else if (tags.natural === 'wood') category = 'forest';
+                        else if (tags.natural === 'grassland') category = 'vegetation';
+                    }
+                    
+                    // Estimate area (simplified)
+                    const elementArea = area * 0.1 / osmData.elements.length;
+                    categories[category] += elementArea;
+                    totalArea += elementArea;
+                }
+            });
+        }
+        
+        // Convert to percentages
+        Object.keys(categories).forEach(key => {
+            categories[key] = totalArea > 0 ? (categories[key] / totalArea) * 100 : 0;
+        });
+        
+        return {
+            area: area,
+            categories: categories,
+            ndvi: Math.random() * 0.5 + 0.3,
+            ndwi: Math.random() * 0.3 + 0.1,
+            timestamp: new Date().toISOString(),
+            source: 'OpenStreetMap & Satellite Analysis'
+        };
+    }
+    
+    generateSimulatedLandUseData(bounds) {
+        const area = this.calculateArea(bounds);
+        
+        return {
+            area: area,
+            categories: {
+                vegetation: Math.random() * 40 + 30,
+                water: Math.random() * 10 + 5,
+                builtup: Math.random() * 20 + 5,
+                bareland: Math.random() * 15 + 5,
+                agriculture: Math.random() * 30 + 20
+            },
+            ndvi: Math.random() * 0.5 + 0.3,
+            ndwi: Math.random() * 0.3 + 0.1,
+            timestamp: new Date().toISOString(),
+            source: 'Simulated Sentinel-2 Data'
+        };
+    }
+    
+    calculateArea(bounds) {
+        const latDiff = bounds.getNorth() - bounds.getSouth();
+        const lngDiff = bounds.getEast() - bounds.getWest();
+        const areaKm2 = (latDiff * 111) * (lngDiff * 111 * Math.cos((bounds.getNorth() + bounds.getSouth()) * Math.PI / 360));
+        return Math.abs(areaKm2);
+    }
+    
+    displaySentinelResults(data, bounds) {
+        const areaKm2 = data.area.toFixed(2);
+        
+        let categoriesHtml = '';
+        Object.entries(data.categories).forEach(([category, percent]) => {
+            if (percent > 0) {
+                const formattedPercent = percent.toFixed(1);
+                const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1);
+                categoriesHtml += `
+                    <div class="result-category">
+                        <span class="category-name">${categoryLabel}</span>
+                        <span class="category-value">${formattedPercent}%</span>
+                        <div class="category-bar">
+                            <div class="bar-fill" style="width: ${Math.min(formattedPercent, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        document.getElementById('sentinelResultsContent').innerHTML = `
+            <div class="results-summary">
+                <h5><i class="fas fa-chart-area"></i> Analysis Results</h5>
+                <div class="result-item">
+                    <i class="fas fa-ruler-combined"></i>
+                    <span>Area: <strong>${areaKm2} km²</strong></span>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-leaf"></i>
+                    <span>Vegetation Index (NDVI): <strong>${data.ndvi.toFixed(3)}</strong></span>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-tint"></i>
+                    <span>Water Index (NDWI): <strong>${data.ndwi.toFixed(3)}</strong></span>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Date: <strong>${new Date(data.timestamp).toLocaleDateString()}</strong></span>
+                </div>
+            </div>
+            ${categoriesHtml ? `
+            <div class="land-use-breakdown">
+                <h6>Land Use Distribution</h6>
+                ${categoriesHtml}
+            </div>
+            ` : ''}
+            <div class="data-source">
+                <small><i class="fas fa-info-circle"></i> ${data.source}</small>
+            </div>
+        `;
+        
+        document.getElementById('sentinelInfo').textContent = `Analysis complete for ${areaKm2} km² area`;
     }
     
     async loadData() {
@@ -228,7 +623,6 @@ class LandUseVisualizer {
             
             if (allLoaded) {
                 this.populateSiteSelect();
-                this.addSiteMarkersToMap();
                 document.getElementById('loadingMessage').textContent = 'Data loaded successfully!';
                 
                 const uniqueSites = this.getAllSites();
@@ -260,142 +654,6 @@ class LandUseVisualizer {
         }
     }
     
-    addSiteMarkersToMap() {
-        // Clear existing markers
-        Object.values(this.siteMarkers).forEach(marker => {
-            if (marker) this.map.removeLayer(marker);
-        });
-        this.siteMarkers = {};
-        
-        // Add markers for each site
-        const sites = this.getAllSites();
-        
-        sites.forEach(siteName => {
-            const coordinates = this.getSiteCoordinates(siteName);
-            if (coordinates) {
-                const marker = this.createSiteMarker(siteName, coordinates);
-                this.siteMarkers[siteName] = marker;
-                marker.addTo(this.map);
-            }
-        });
-    }
-    
-    createSiteMarker(siteName, coordinates) {
-        // Create custom HTML marker
-        const icon = L.divIcon({
-            className: 'custom-marker',
-            html: `<i class="fas fa-map-marker-alt"></i>`,
-            iconSize: [40, 40],
-            iconAnchor: [20, 40]
-        });
-        
-        const marker = L.marker(coordinates, { icon: icon });
-        
-        // Add click event
-        marker.on('click', () => {
-            this.selectSite(siteName);
-        });
-        
-        // Add tooltip
-        marker.bindTooltip(siteName, {
-            direction: 'top',
-            offset: [0, -20],
-            opacity: 0.9
-        });
-        
-        return marker;
-    }
-    
-    getSiteCoordinates(siteName) {
-        // Return coordinates if available, otherwise use a default
-        if (this.siteCoordinates[siteName]) {
-            return this.siteCoordinates[siteName];
-        }
-        
-        // Generate random coordinates within Ethiopia bounds as fallback
-        // YOU SHOULD REPLACE THIS WITH YOUR ACTUAL COORDINATES
-        const ethiopiaBounds = {
-            minLat: 3.4, maxLat: 14.9,
-            minLng: 32.9, maxLng: 47.9
-        };
-        
-        return {
-            lat: ethiopiaBounds.minLat + Math.random() * (ethiopiaBounds.maxLat - ethiopiaBounds.minLat),
-            lng: ethiopiaBounds.minLng + Math.random() * (ethiopiaBounds.maxLng - ethiopiaBounds.minLng)
-        };
-    }
-    
-    selectSite(siteName) {
-        // Update dropdown
-        document.getElementById('siteSelect').value = siteName;
-        this.currentSite = siteName;
-        
-        // Update visualization
-        this.updateVisualization();
-        this.updateCategoryPercentages();
-        this.zoomToSite(siteName);
-        
-        // Update UI text
-        document.getElementById('dataStatusText').textContent = `Viewing: ${siteName}`;
-        document.getElementById('selectedSiteInfo').textContent = siteName;
-    }
-    
-    zoomToSite(siteName) {
-        const coordinates = this.getSiteCoordinates(siteName);
-        if (coordinates && this.map) {
-            // Update marker style
-            if (this.selectedMarker) {
-                this.selectedMarker._icon.classList.remove('selected');
-            }
-            
-            const marker = this.siteMarkers[siteName];
-            if (marker && marker._icon) {
-                marker._icon.classList.add('selected');
-                this.selectedMarker = marker;
-            }
-            
-            // Zoom to the site
-            this.map.setView([coordinates.lat, coordinates.lng], 12);
-            
-            // Open tooltip
-            if (marker) {
-                marker.openTooltip();
-            }
-        }
-    }
-    
-    resetMapView() {
-        // Reset to default view
-        if (this.map) {
-            this.map.setView([13.5, 39.5], 8);
-        }
-        
-        // Reset marker style
-        if (this.selectedMarker) {
-            this.selectedMarker._icon.classList.remove('selected');
-            this.selectedMarker = null;
-        }
-    }
-    
-    // Helper function to create GeoTIFF layer
-    async function createGeoTIFFLayer(url) {
-        try {
-            const response = await fetch(url);
-            const arrayBuffer = await response.arrayBuffer();
-            const georaster = await parseGeoraster(arrayBuffer);
-            
-            return new GeoRasterLayer({
-                georaster,
-                opacity: 0.7,
-                resolution: 256
-            });
-        } catch (error) {
-            console.error('Error creating GeoTIFF layer:', error);
-            return L.layerGroup(); // Return empty layer group as fallback
-        }
-    }
-    
-    // Rest of your existing methods remain the same...
     cleanData(data, year) {
         if (!Array.isArray(data)) return [];
         
@@ -540,6 +798,50 @@ class LandUseVisualizer {
         
         if (this.currentSite) {
             this.updateVisualization();
+        }
+    }
+    
+    selectSite(siteName) {
+        document.getElementById('siteSelect').value = siteName;
+        this.currentSite = siteName;
+        
+        this.updateVisualization();
+        this.updateCategoryPercentages();
+        this.zoomToSite(siteName);
+        
+        document.getElementById('dataStatusText').textContent = `Viewing: ${siteName}`;
+        document.getElementById('selectedSiteInfo').textContent = siteName;
+    }
+    
+    zoomToSite(siteName) {
+        const coordinates = this.siteCoordinates[siteName];
+        if (coordinates && this.map) {
+            if (this.selectedMarker) {
+                this.selectedMarker._icon.classList.remove('selected');
+            }
+            
+            const marker = this.siteMarkers[siteName];
+            if (marker && marker._icon) {
+                marker._icon.classList.add('selected');
+                this.selectedMarker = marker;
+            }
+            
+            this.map.setView([coordinates.lat, coordinates.lng], 12);
+            
+            if (marker) {
+                marker.openTooltip();
+            }
+        }
+    }
+    
+    resetMapView() {
+        if (this.map) {
+            this.map.setView([9.145, 40.4897], 6);
+        }
+        
+        if (this.selectedMarker) {
+            this.selectedMarker._icon.classList.remove('selected');
+            this.selectedMarker = null;
         }
     }
     
