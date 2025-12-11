@@ -1,626 +1,578 @@
-class LandUseVisualizer {
-    constructor() {
-        this.data = {
-            '2020': null,
-            '2022': null,
-            '2024': null
-        };
-        this.currentSite = null;
-        this.selectedCategories = new Set([
-            'water', 'trees', 'floodVegetation', 'crops', 'builtArea', 'bareGround', 'rangeland'
-        ]);
-        this.categoryIcons = {
-            water: 'fas fa-tint',
-            trees: 'fas fa-tree',
-            floodVegetation: 'fas fa-water',
-            crops: 'fas fa-seedling',
-            builtArea: 'fas fa-building',
-            bareGround: 'fas fa-mountain',
-            rangeland: 'fas fa-paw'
-        };
-        this.categoryColors = {
-            water: '#3498db',
-            trees: '#27ae60',
-            floodVegetation: '#1abc9c',
-            crops: '#f1c40f',
-            builtArea: '#e74c3c',
-            bareGround: '#95a5a6',
-            rangeland: '#8e44ad'
-        };
-        this.chart = null;
-        
-        this.init();
+:root {
+    --primary-color: #2c5f2d;
+    --secondary-color: #27ae60;
+    --accent-color: #f39c12;
+    --background-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #2c3e50;
+    --border-color: #e1e5eb;
+    --water-color: #3498db;
+    --trees-color: #27ae60;
+    --flood-color: #1abc9c;
+    --crops-color: #f1c40f;
+    --built-color: #e74c3c;
+    --bare-color: #95a5a6;
+    --range-color: #8e44ad;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text-color);
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    background: var(--background-color);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* Header Styles */
+header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-content {
+    position: relative;
+    z-index: 2;
+}
+
+.header-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+    color: #e8f5e8;
+}
+
+h1 {
+    font-size: 2.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    color: white;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Main Content Layout */
+.main-content {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 2rem;
+    padding: 2rem;
+    min-height: 80vh;
+}
+
+/* Left Panel */
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Narrative Section */
+.narrative-section {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 1.8rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+}
+
+.narrative-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+}
+
+.narrative-header i {
+    font-size: 1.5rem;
+}
+
+.narrative-header h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.narrative-text {
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    color: #4a5568;
+    font-size: 1.05rem;
+}
+
+.narrative-stats {
+    background: #f1f8ff;
+    padding: 1.2rem;
+    border-radius: 10px;
+    margin: 1.5rem 0;
+    border-left: 4px solid var(--secondary-color);
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+}
+
+.stat-item:last-child {
+    margin-bottom: 0;
+}
+
+.stat-label {
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #4a5568;
+}
+
+.loading-indicator i {
+    color: var(--secondary-color);
+}
+
+.narrative-insights {
+    margin-top: 1.5rem;
+}
+
+.narrative-insights h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.insights-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.insights-list li {
+    padding: 0.5rem 0 0.5rem 2rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+}
+
+.insights-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+/* Control Panel */
+.control-panel {
+    background: var(--card-bg);
+    padding: 1.8rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+}
+
+.form-group {
+    margin-bottom: 1.8rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.site-select {
+    width: 100%;
+    padding: 0.9rem;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 1rem;
+    background: white;
+    transition: all 0.3s ease;
+    color: var(--text-color);
+}
+
+.site-select:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
+}
+
+.site-select:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Beautiful Category Selection */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.category-card {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.category-card.active {
+    border-color: var(--secondary-color);
+    background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+    box-shadow: 0 6px 15px rgba(39, 174, 96, 0.2);
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.category-card.active::before {
+    opacity: 1;
+}
+
+.category-card[data-category="water"]::before { background: var(--water-color); }
+.category-card[data-category="trees"]::before { background: var(--trees-color); }
+.category-card[data-category="floodVegetation"]::before { background: var(--flood-color); }
+.category-card[data-category="crops"]::before { background: var(--crops-color); }
+.category-card[data-category="builtArea"]::before { background: var(--built-color); }
+.category-card[data-category="bareGround"]::before { background: var(--bare-color); }
+.category-card[data-category="rangeland"]::before { background: var(--range-color); }
+
+.category-icon {
+    font-size: 2rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.9;
+}
+
+.category-card[data-category="water"] .category-icon { color: var(--water-color); }
+.category-card[data-category="trees"] .category-icon { color: var(--trees-color); }
+.category-card[data-category="floodVegetation"] .category-icon { color: var(--flood-color); }
+.category-card[data-category="crops"] .category-icon { color: var(--crops-color); }
+.category-card[data-category="builtArea"] .category-icon { color: var(--built-color); }
+.category-card[data-category="bareGround"] .category-icon { color: var(--bare-color); }
+.category-card[data-category="rangeland"] .category-icon { color: var(--range-color); }
+
+.category-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.category-percent {
+    font-size: 0.85rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+.category-toggle {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.category-card.active .category-toggle {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.category-toggle i {
+    font-size: 0.7rem;
+    opacity: 0;
+}
+
+.category-card.active .category-toggle i {
+    opacity: 1;
+}
+
+/* Visualization Area */
+.visualization-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.chart-header {
+    background: linear-gradient(135deg, var(--card-bg), #f8f9fa);
+    padding: 1.5rem;
+    border-radius: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.chart-header h2 {
+    color: var(--primary-color);
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.chart-info {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.info-item i {
+    color: var(--secondary-color);
+}
+
+.chart-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    height: 500px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-chart {
+    text-align: center;
+    color: #4a5568;
+}
+
+.loading-chart i {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.loading-chart p {
+    font-size: 1.1rem;
+}
+
+/* Timeline */
+.timeline-container {
+    background: linear-gradient(135deg, var(--card-bg), #f8f9fa);
+    padding: 1.8rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.timeline-container h3 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    position: relative;
+}
+
+.timeline-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.timeline-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-year {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.timeline-total {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+}
+
+.timeline-change {
+    font-size: 0.95rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+.timeline-change.positive {
+    color: #27ae60;
+}
+
+.timeline-change.negative {
+    color: #e74c3c;
+}
+
+.loading-timeline {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    color: #4a5568;
+}
+
+.loading-timeline i {
+    color: var(--secondary-color);
+    margin-right: 1rem;
+}
+
+/* Footer */
+footer {
+    background: linear-gradient(135deg, var(--primary-color), #1e8449);
+    color: white;
+    text-align: center;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+footer i {
+    margin: 0 0.5rem;
+    color: #e8f5e8;
+}
+
+/* Chart-specific styles */
+.chartjs-tooltip {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 1fr;
     }
     
-    async init() {
-        this.showLoadingState();
-        await this.loadData();
-        this.setupEventListeners();
-        this.populateCategoryCards();
-        this.populateSiteSelect();
-        
-        if (this.data['2020'] && this.data['2020'].length > 0) {
-            this.currentSite = this.data['2020'][0].Site_Name;
-            this.updateVisualization();
-            this.updateNarrative();
-            this.updateCategoryPercentages();
-        }
+    .left-panel {
+        order: 2;
     }
     
-    showLoadingState() {
-        // Show loading indicators
-        document.getElementById('loadingChart').style.display = 'flex';
-        document.getElementById('mainChart').style.display = 'none';
-    }
-    
-    hideLoadingState() {
-        // Hide loading indicators
-        document.getElementById('loadingChart').style.display = 'none';
-        document.getElementById('mainChart').style.display = 'block';
-    }
-    
-    async loadData() {
-        try {
-            const years = ['2020', '2022', '2024'];
-            
-            for (const year of years) {
-                try {
-                    const response = await fetch(`data/${year}-Result-exc.json`);
-                    if (!response.ok) {
-                        throw new Error(`Failed to load ${year} data`);
-                    }
-                    this.data[year] = await response.json();
-                    console.log(`Loaded ${year} data:`, this.data[year]);
-                } catch (error) {
-                    console.error(`Error loading ${year} data:`, error);
-                    this.data[year] = [];
-                }
-            }
-            
-            // Clean and standardize the data
-            this.cleanData();
-            
-        } catch (error) {
-            console.error('Error loading data:', error);
-            this.showErrorMessage('Failed to load data. Please check if JSON files are in the data folder.');
-        }
-    }
-    
-    cleanData() {
-        // Ensure all data has consistent field names
-        Object.keys(this.data).forEach(year => {
-            if (this.data[year]) {
-                this.data[year] = this.data[year].map(item => {
-                    const cleaned = {};
-                    
-                    // Handle different column name formats
-                    const columnMapping = {
-                        'Site_Name': ['Site_Name', 'Site Name', 'site_name'],
-                        'Total_Area_sq_km': ['Total_Area_sq_km', 'Total_Area_sq km', 'Total Area (sq km)', 'Total_Area'],
-                        'Water_Percent': ['Water_Percent', 'Water Percent', 'water_percent'],
-                        'Trees_Percent': ['Trees_Percent', 'Trees Percent', 'trees_percent'],
-                        'FloodVegetation_Percent': ['FloodVegetation_Percent', 'FloodVegetation Percent', 'Flood_Vegetation_Percent'],
-                        'Crops_Percent': ['Crops_Percent', 'Crops Percent', 'crops_percent'],
-                        'BuiltArea_Percent': ['BuiltArea_Percent', 'BuiltArea Percent', 'Built_Area_Percent'],
-                        'BareGround_Percent': ['BareGround_Percent', 'BareGround Percent', 'Bare_Ground_Percent'],
-                        'Rangeland_Percent': ['Rangeland_Percent', 'Rangeland Percent', 'rangeland_percent']
-                    };
-                    
-                    // Map columns
-                    Object.keys(columnMapping).forEach(standardKey => {
-                        const possibleKeys = columnMapping[standardKey];
-                        let foundValue = null;
-                        
-                        for (const key of possibleKeys) {
-                            if (item[key] !== undefined) {
-                                foundValue = item[key];
-                                break;
-                            }
-                        }
-                        
-                        cleaned[standardKey] = foundValue !== null ? foundValue : 0;
-                    });
-                    
-                    // Handle 2024 Class_11 mapping to Rangeland
-                    if (year === '2024') {
-                        if (item['Class_11_Percent'] !== undefined) {
-                            cleaned['Rangeland_Percent'] = item['Class_11_Percent'];
-                        }
-                    }
-                    
-                    return cleaned;
-                });
-            }
-        });
-    }
-    
-    showErrorMessage(message) {
-        const narrativeContent = document.getElementById('narrativeContent');
-        narrativeContent.innerHTML = `
-            <p class="narrative-text" style="color: #e74c3c;">
-                <i class="fas fa-exclamation-triangle"></i> ${message}
-            </p>
-            <div class="narrative-stats">
-                <p>Please ensure your JSON files are in the <code>data/</code> folder with these exact names:</p>
-                <ul style="margin-top: 10px; padding-left: 20px;">
-                    <li><code>2020-Result-exc.json</code></li>
-                    <li><code>2022-Result-exc.json</code></li>
-                    <li><code>2024-Result-exc.json</code></li>
-                </ul>
-            </div>
-        `;
-    }
-    
-    populateSiteSelect() {
-        const siteSelect = document.getElementById('siteSelect');
-        siteSelect.innerHTML = '<option value="">-- Select a site --</option>';
-        
-        // Get unique site names from all years
-        const sites = new Set();
-        
-        Object.keys(this.data).forEach(year => {
-            if (this.data[year]) {
-                this.data[year].forEach(item => {
-                    if (item.Site_Name) {
-                        sites.add(item.Site_Name);
-                    }
-                });
-            }
-        });
-        
-        if (sites.size === 0) {
-            siteSelect.innerHTML = '<option value="">No sites found in data</option>';
-            siteSelect.disabled = true;
-            return;
-        }
-        
-        sites.forEach(site => {
-            const option = document.createElement('option');
-            option.value = site;
-            option.textContent = site;
-            siteSelect.appendChild(option);
-        });
-        
-        siteSelect.disabled = false;
-        
-        // Select first site by default
-        if (sites.size > 0) {
-            const firstSite = Array.from(sites)[0];
-            siteSelect.value = firstSite;
-            this.currentSite = firstSite;
-        }
-    }
-    
-    populateCategoryCards() {
-        const container = document.getElementById('categoriesGrid');
-        container.innerHTML = '';
-        
-        const categories = [
-            { id: 'water', label: 'Water', percentKey: 'Water_Percent' },
-            { id: 'trees', label: 'Trees', percentKey: 'Trees_Percent' },
-            { id: 'floodVegetation', label: 'Flood Vegetation', percentKey: 'FloodVegetation_Percent' },
-            { id: 'crops', label: 'Crops', percentKey: 'Crops_Percent' },
-            { id: 'builtArea', label: 'Built Area', percentKey: 'BuiltArea_Percent' },
-            { id: 'bareGround', label: 'Bare Ground', percentKey: 'BareGround_Percent' },
-            { id: 'rangeland', label: 'Rangeland', percentKey: 'Rangeland_Percent' }
-        ];
-        
-        categories.forEach(category => {
-            const card = document.createElement('div');
-            card.className = `category-card ${this.selectedCategories.has(category.id) ? 'active' : ''}`;
-            card.dataset.category = category.id;
-            card.innerHTML = `
-                <div class="category-toggle">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="category-icon">
-                    <i class="${this.categoryIcons[category.id]}"></i>
-                </div>
-                <div class="category-label">${category.label}</div>
-                <div class="category-percent" id="percent-${category.id}">0%</div>
-            `;
-            
-            card.addEventListener('click', () => {
-                this.toggleCategory(category.id, card);
-            });
-            
-            container.appendChild(card);
-        });
-    }
-    
-    setupEventListeners() {
-        document.getElementById('siteSelect').addEventListener('change', (e) => {
-            this.currentSite = e.target.value;
-            if (this.currentSite) {
-                this.updateVisualization();
-                this.updateNarrative();
-                this.updateCategoryPercentages();
-            }
-        });
-    }
-    
-    toggleCategory(categoryId, card) {
-        if (this.selectedCategories.has(categoryId)) {
-            this.selectedCategories.delete(categoryId);
-            card.classList.remove('active');
-        } else {
-            this.selectedCategories.add(categoryId);
-            card.classList.add('active');
-        }
-        
-        if (this.currentSite) {
-            this.updateVisualization();
-            this.updateNarrative();
-        }
-    }
-    
-    getSiteData(siteName, year) {
-        if (!this.data[year]) return null;
-        return this.data[year].find(site => site.Site_Name === siteName);
-    }
-    
-    updateCategoryPercentages() {
-        if (!this.currentSite) return;
-        
-        const siteData2024 = this.getSiteData(this.currentSite, '2024');
-        if (!siteData2024) return;
-        
-        const percentMap = {
-            water: siteData2024.Water_Percent || 0,
-            trees: siteData2024.Trees_Percent || 0,
-            floodVegetation: siteData2024.FloodVegetation_Percent || 0,
-            crops: siteData2024.Crops_Percent || 0,
-            builtArea: siteData2024.BuiltArea_Percent || 0,
-            bareGround: siteData2024.BareGround_Percent || 0,
-            rangeland: siteData2024.Rangeland_Percent || 0
-        };
-        
-        Object.entries(percentMap).forEach(([category, percent]) => {
-            const element = document.getElementById(`percent-${category}`);
-            if (element) {
-                element.textContent = `${percent.toFixed(2)}%`;
-            }
-        });
-    }
-    
-    updateVisualization() {
-        if (!this.currentSite) return;
-        
-        this.hideLoadingState();
-        
-        const years = ['2020', '2022', '2024'];
-        const categories = {
-            water: { label: 'Water', key: 'Water_Percent' },
-            trees: { label: 'Trees', key: 'Trees_Percent' },
-            floodVegetation: { label: 'Flood Vegetation', key: 'FloodVegetation_Percent' },
-            crops: { label: 'Crops', key: 'Crops_Percent' },
-            builtArea: { label: 'Built Area', key: 'BuiltArea_Percent' },
-            bareGround: { label: 'Bare Ground', key: 'BareGround_Percent' },
-            rangeland: { label: 'Rangeland', key: 'Rangeland_Percent' }
-        };
-        
-        const datasets = [];
-        const selectedCategories = Array.from(this.selectedCategories);
-        
-        selectedCategories.forEach(categoryId => {
-            const category = categories[categoryId];
-            const data = years.map(year => {
-                const siteData = this.getSiteData(this.currentSite, year);
-                return siteData ? (siteData[category.key] || 0) : 0;
-            });
-            
-            datasets.push({
-                label: category.label,
-                data: data,
-                backgroundColor: this.categoryColors[categoryId],
-                borderColor: this.categoryColors[categoryId],
-                borderWidth: 2,
-                borderRadius: 6,
-                categoryPercentage: 0.8,
-                barPercentage: 0.9
-            });
-        });
-        
-        this.updateChart(years, datasets);
-        this.updateTimeline(years);
-        this.updateCategoryPercentages();
-    }
-    
-    updateChart(labels, datasets) {
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        
-        if (this.chart) {
-            this.chart.destroy();
-        }
-        
-        this.chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            font: {
-                                size: 14,
-                                family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-                            },
-                            padding: 20,
-                            usePointStyle: true,
-                            pointStyle: 'rectRounded'
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        titleColor: '#2c3e50',
-                        bodyColor: '#4a5568',
-                        borderColor: '#e1e5eb',
-                        borderWidth: 1,
-                        padding: 12,
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
-                            }
-                        }
-                    },
-                    datalabels: {
-                        display: true,
-                        color: '#2c3e50',
-                        anchor: 'end',
-                        align: 'top',
-                        formatter: function(value, context) {
-                            return value.toFixed(1) + '%';
-                        },
-                        font: {
-                            weight: 'bold',
-                            size: 11
-                        },
-                        padding: {
-                            top: 4
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                size: 14,
-                                weight: '600'
-                            },
-                            color: '#2c3e50'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Year',
-                            font: {
-                                size: 16,
-                                weight: '600'
-                            },
-                            color: '#2c3e50',
-                            padding: { top: 10 }
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        stacked: false,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            font: {
-                                size: 13
-                            },
-                            color: '#4a5568',
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: 'Percentage (%)',
-                            font: {
-                                size: 16,
-                                weight: '600'
-                            },
-                            color: '#2c3e50',
-                            padding: { bottom: 10 }
-                        },
-                        max: 100
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                animation: {
-                    duration: 750,
-                    easing: 'easeOutQuart'
-                },
-                layout: {
-                    padding: {
-                        top: 20,
-                        right: 20,
-                        bottom: 20,
-                        left: 20
-                    }
-                }
-            },
-            plugins: [ChartDataLabels]
-        });
-    }
-    
-    updateTimeline(years) {
-        const timeline = document.getElementById('timeline');
-        timeline.innerHTML = '';
-        
-        const siteData2020 = this.getSiteData(this.currentSite, '2020');
-        const siteData2022 = this.getSiteData(this.currentSite, '2022');
-        const siteData2024 = this.getSiteData(this.currentSite, '2024');
-        
-        if (!siteData2020 || !siteData2022 || !siteData2024) {
-            timeline.innerHTML = '<div class="no-data">Complete data not available for all years</div>';
-            return;
-        }
-        
-        const timelineData = [
-            { year: '2020', data: siteData2020 },
-            { year: '2022', data: siteData2022 },
-            { year: '2024', data: siteData2024 }
-        ];
-        
-        timelineData.forEach((item, index) => {
-            const div = document.createElement('div');
-            div.className = 'timeline-item';
-            
-            let change = '';
-            let changeClass = '';
-            
-            if (index > 0) {
-                const prevItem = timelineData[index - 1];
-                const prevTotal = prevItem.data.Total_Area_sq_km || 0;
-                const currentTotal = item.data.Total_Area_sq_km || 0;
-                const percentChange = prevTotal ? ((currentTotal - prevTotal) / prevTotal * 100) : 0;
-                
-                change = percentChange > 0 ? 
-                    `+${percentChange.toFixed(1)}%` : 
-                    `${percentChange.toFixed(1)}%`;
-                changeClass = percentChange > 0 ? 'positive' : percentChange < 0 ? 'negative' : '';
-            }
-            
-            div.innerHTML = `
-                <div class="timeline-year">${item.year}</div>
-                <div class="timeline-total">${(item.data.Total_Area_sq_km || 0).toFixed(1)} sq km</div>
-                <div class="timeline-change ${changeClass}">${change || 'Baseline'}</div>
-            `;
-            
-            timeline.appendChild(div);
-        });
-    }
-    
-    updateNarrative() {
-        if (!this.currentSite) {
-            document.getElementById('narrativeContent').innerHTML = `
-                <p class="narrative-text">
-                    Please select a site from the dropdown to view detailed analysis.
-                </p>
-            `;
-            return;
-        }
-        
-        const siteData2020 = this.getSiteData(this.currentSite, '2020');
-        const siteData2024 = this.getSiteData(this.currentSite, '2024');
-        
-        if (!siteData2020 || !siteData2024) {
-            document.getElementById('narrativeContent').innerHTML = `
-                <p class="narrative-text">
-                    Complete data not available for <strong>${this.currentSite}</strong>. Some years may be missing.
-                </p>
-            `;
-            return;
-        }
-        
-        // Calculate key statistics
-        const totalArea2020 = siteData2020.Total_Area_sq_km || 0;
-        const totalArea2024 = siteData2024.Total_Area_sq_km || 0;
-        const areaChange = ((totalArea2024 - totalArea2020) / totalArea2020 * 100).toFixed(1);
-        
-        // Find dominant categories
-        const categories = {
-            'Water_Percent': 'Water',
-            'Trees_Percent': 'Trees',
-            'Crops_Percent': 'Crops',
-            'BuiltArea_Percent': 'Built Area',
-            'Rangeland_Percent': 'Rangeland'
-        };
-        
-        let max2020 = 0;
-        let dominant2020 = '';
-        let max2024 = 0;
-        let dominant2024 = '';
-        
-        Object.entries(categories).forEach(([key, label]) => {
-            const percent2020 = siteData2020[key] || 0;
-            const percent2024 = siteData2024[key] || 0;
-            
-            if (percent2020 > max2020) {
-                max2020 = percent2020;
-                dominant2020 = label;
-            }
-            
-            if (percent2024 > max2024) {
-                max2024 = percent2024;
-                dominant2024 = label;
-            }
-        });
-        
-        // Calculate total selected percentage
-        let totalSelectedPercent = 0;
-        const percentKeys = {
-            water: 'Water_Percent',
-            trees: 'Trees_Percent',
-            floodVegetation: 'FloodVegetation_Percent',
-            crops: 'Crops_Percent',
-            builtArea: 'BuiltArea_Percent',
-            bareGround: 'BareGround_Percent',
-            rangeland: 'Rangeland_Percent'
-        };
-        
-        Array.from(this.selectedCategories).forEach(categoryId => {
-            totalSelectedPercent += siteData2024[percentKeys[categoryId]] || 0;
-        });
-        
-        const narrativeContent = `
-            <p class="narrative-text">
-                Analysis of <strong>${this.currentSite}</strong> reveals significant land use transformations between 2020 and 2024. 
-                The site covers ${totalArea2024.toFixed(1)} square kilometers, showing a ${areaChange >= 0 ? 'growth' : 'reduction'} 
-                of ${Math.abs(areaChange)}% in total monitored area.
-            </p>
-            
-            <div class="narrative-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Total Area (2024):</span>
-                    <span class="stat-value">${totalArea2024.toFixed(1)} sq km</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Area Change (2020-2024):</span>
-                    <span class="stat-value">${areaChange}%</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Dominant Use (2024):</span>
-                    <span class="stat-value">${dominant2024}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Selected Categories:</span>
-                    <span class="stat-value">${totalSelectedPercent.toFixed(1)}%</span>
-                </div>
-            </div>
-            
-            <div class="narrative-insights">
-                <h4><i class="fas fa-chart-line"></i> Trend Analysis</h4>
-                <ul class="insights-list">
-                    <li>${dominant2020} was the primary land use in 2020 (${max2020.toFixed(1)}%)</li>
-                    <li>${dominant2024} has emerged as dominant in 2024 (${max2024.toFixed(1)}%)</li>
-                    <li>${areaChange >= 0 ? 'Expansion' : 'Contraction'} of monitored area suggests ${areaChange >= 0 ? 'increased' : 'reduced'} development activity</li>
-                    <li>Selected categories represent ${totalSelectedPercent.toFixed(1)}% of total land use in 2024</li>
-                </ul>
-            </div>
-        `;
-        
-        document.getElementById('narrativeContent').innerHTML = narrativeContent;
+    .visualization-area {
+        order: 1;
     }
 }
 
-// Initialize the application
-document.addEventListener('DOMContentLoaded', () => {
-    new LandUseVisualizer();
-});
+@media (max-width: 768px) {
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .chart-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .timeline {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        padding: 1rem;
+        height: 400px;
+    }
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
