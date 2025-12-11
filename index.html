@@ -25,27 +25,28 @@
                 <div class="narrative-section">
                     <div class="narrative-header">
                         <i class="fas fa-info-circle"></i>
-                        <h3>About This Visualization</h3>
+                        <h3>Data Status</h3>
                     </div>
                     <div class="narrative-content" id="narrativeContent">
-                        <p class="narrative-text">
-                            Welcome to the Land Use Variation Analyzer. Loading data for analysis...
-                        </p>
-                        <div class="narrative-stats" id="narrativeStats">
-                            <div class="loading-indicator">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>Loading data from repository...</span>
+                        <div class="data-status-panel">
+                            <div class="status-item">
+                                <span class="status-label">2020 Data:</span>
+                                <span class="status-value" id="status2020">Checking...</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">2022 Data:</span>
+                                <span class="status-value" id="status2022">Checking...</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">2024 Data:</span>
+                                <span class="status-value" id="status2024">Checking...</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Total Sites:</span>
+                                <span class="status-value" id="totalSites">0</span>
                             </div>
                         </div>
-                        <div class="narrative-insights">
-                            <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
-                            <ul class="insights-list">
-                                <li>Track changes in land cover percentages over time</li>
-                                <li>Monitor urbanization and agricultural expansion</li>
-                                <li>Understand environmental transformation patterns</li>
-                                <li>Analyze the impact of development on natural resources</li>
-                            </ul>
-                        </div>
+                        <div id="debugInfo" style="display: none; background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; font-family: monospace;"></div>
                     </div>
                 </div>
 
@@ -86,7 +87,10 @@
                 <div class="chart-container">
                     <div class="loading-chart" id="loadingChart">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading visualization...</p>
+                        <p id="loadingMessage">Loading data from repository...</p>
+                        <button id="retryBtn" class="retry-btn" style="margin-top: 20px; display: none;">
+                            <i class="fas fa-redo"></i> Retry Loading Data
+                        </button>
                     </div>
                     <canvas id="mainChart" style="display: none;"></canvas>
                 </div>
@@ -96,7 +100,7 @@
                     <div class="timeline" id="timeline">
                         <div class="loading-timeline">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <span>Timeline data loading...</span>
+                            <span>Waiting for data...</span>
                         </div>
                     </div>
                 </div>
